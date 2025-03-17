@@ -196,7 +196,7 @@ NS <- length(unique(eth.df$strata))
 pre.psu.qua <- as.vector(treated.multi$psu[treated.multi$season <=0])
 post.psu.qua <- as.vector(treated.multi$psu[treated.multi$season >0])
 x.psu <- control.whole.df %>% dplyr::select(psu,eth1,season)
-x.psu <- x.psu%>% dplyr::arrange(psu,eth1)
+x.psu <- x.psu%>% dplyr::arrange(season,eth1)
 x.psu <- as.vector(x.psu[,c(1)])
 
 allpsu <- c(pre.psu.qua,x.psu)
