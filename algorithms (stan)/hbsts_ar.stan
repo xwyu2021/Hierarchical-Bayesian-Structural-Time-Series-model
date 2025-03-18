@@ -169,35 +169,8 @@ generated quantities {
   for(i in 1:T_forecast){
     for(j in index_obs_forecast[i]:(index_obs_forecast[i+1]-1)){
       ys[j] = normal_rng(alpha_forecast_unscale[i],sigma_obs);
-      
     }
   }
-  real log_lik_y[N];
-  for(i in 1:T){
-    for(j in index_obs_t[i]:(index_obs_t[i+1]-1)){
-      log_lik_y[j]= normal_lpdf(y[j]|alpha[i],sigma_obs);
-    }
-  }
-  //real log_lik_x[K];
-  //for(i in 1:(T+T_forecast)){
-    //for(m in 1:M){
-      //if(m == 1){
-        //if(i==1){
-          //for(j in 1:index_x_t[1,1]){
-            //log_lik_x[j] = normal_lpdf(x_obs[j]|x[1,1],sigma_obs);
-          //}
-        //}else{
-          //for(j in (index_x_t[i-1,M]+1):index_x_t[i,1]){
-            //log_lik_x[j] =normal_lpdf(x_obs[j]|x[i,1],sigma_obs);
-          //}
-        //}
-      //}else{
-        //for(j in (index_x_t[i,m-1]+1):index_x_t[i,m]){
-          //  log_lik_x[j] = normal_lpdf(x_obs[j]|x[i,m],sigma_obs);
-        //}
-      //}
-    //}
-  //}
 }
 
 
