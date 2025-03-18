@@ -183,10 +183,10 @@ generated quantities {
     alpha_forecast[i] = mu_forecast[i] + normal_rng(f_forecast[i],sigma_y);
     alpha_forecast_unscale[i] = (alpha_forecast[i] * alpha_sd) + alpha_mean;
   }
-  real log_lik_y[N];
-  for(i in 1:T){
-    for(j in index_obs_t[i]:(index_obs_t[i+1]-1)){
-      log_lik_y[j]= normal_lpdf(y[j]|alpha[i],sigma_obs);
+  real ys[index_obs_forecast[T_forecast+1]-1];
+  for(i in 1:T_forecast){
+    for(j in index_obs_forecast[i]:(index_obs_forecast[i+1]-1)){
+      ys[j] = normal_rng(alpha_forecast_unscale[i],sigma_obs);
     }
   }
 }
