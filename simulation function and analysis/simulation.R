@@ -46,7 +46,7 @@ qij <-function(corrij=0.7,ri,rj){
 ### data generating function with seasonality ###
 #################################################
 datagen.arima.season <- function(T=100,dimx = 5,sig.x,mu.x=rep(1,5),beta,sd_trend = 0.1,
-                              phi=0.5,sd_y=0.1,corr =FALSE){
+                              phi=0.5,sd_y=0.1,corr =FALSE,r){
   trend=rep(0,T) #Trend component
   X <- matrix(0,nrow=T,ncol=dimx)
   if(corr == TRUE){
@@ -106,11 +106,11 @@ datagen.arima.season <- function(T=100,dimx = 5,sig.x,mu.x=rep(1,5),beta,sd_tren
   return(out)
 }
 
-#sig.x <- matrix(c(1,0.8,0.85,0.75,0.82,
-#                  0.8,1,0.78,0.83,0.79,
-#                  0.85,0.78,1,0.81,0.77,
-#                  0.75,0.83,0.81,1,0.84,
-#                  0.82,0.79,0.77,0.84,1),nrow=5,ncol=5)
+sig.x <- matrix(c(1,0.8,0.85,0.75,0.82,
+                  0.8,1,0.78,0.83,0.79,
+                  0.85,0.78,1,0.81,0.77,
+                  0.75,0.83,0.81,1,0.84,
+                  0.82,0.79,0.77,0.84,1),nrow=5,ncol=5)
 
 ###################################
 ### data generating function ######
@@ -185,9 +185,9 @@ sim <- function(miss){
                               beta=c(0.1,-0.5,1,0.1,rep(0,2)),
                                ar = TRUE,sd_trend = 0.1,sd_y = 0.1,
                                r = rep(0.8,5),corr=TRUE,phi=1)
-  #  newdata <- datagen.arima.season(T=300,dimx = 5,mu.x=rnorm(5,0,0.1),beta=c(0.1,-0.5,1,0.1,rep(0,2)),incprob=incprob,
-  #                             ar = TRUE,sd_trend = 0.1,sd_slope = 0.1,
-  #                             r = rep(0.8,5),corr=FALSE,phi=1)
+  #  newdata <- datagen.arima.season(T=300,dimx = 5,sig.x,mu.x=rnorm(5,0,0.1),beta=c(0.1,-0.5,1,0.1,rep(0,2)),
+  #                             sd_trend = 0.1,r = rep(0.8, 5),
+  #                             corr=FALSE,phi=1,sd_y=0.1)
  
   ys <- ty <- c()
   simemp.mean.y <-  newdata$y
