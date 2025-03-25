@@ -200,6 +200,10 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
 
 
 ## -- ADDING RANDOM EFFECT -- ##
+stan_mod_hbstsLL_re <- stan_model(file='algorithm (stan)/hbsts_ll_re.stan',verbose=T)
+stan_mod_hbstsAR_re <- stan_model(file='algorithm (stan)/hbsts_ar_re.stan',verbose=T)
+stan_mod_hbstsLLT_re <- stan_model(file='algorithm (stan)/hbsts_llt_re.stan',verbose=T)
+stan_mod_hbstsGLLT_re <- stan_model(file='algorithm (stan)/hbsts_gllt_re.stan',verbose=T)
 
 run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                       pre.obs=pre.obs.qua,
@@ -223,7 +227,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
     ls <- list(sigma2_mu=1,mu_err=rep(0,pre.time),sigma2_delta=1,delta_err=rep(0,pre.time))
     lls <- vector("list",1)
     init_fun <- lapply(lls,function(...) ls)
-    modeli <- stan(file='~/Desktop/LSE/code/hbsts_llt_re.stan',
+    modeli <- sampling(stan_mod_hbstsLLT_re,
                    data = list(T=pre.time,T_forecast=post.time,
                                N=pre.obs,N_forecast=post.obs,
                                M=dimx,y=pre.ys,
@@ -245,7 +249,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
       ls <- list(mu_err=rep(0,pre.time),phi=0)
       lls <- vector("list",nchains)
       init_fun <- lapply(lls,function(...) ls)
-      modeli <- stan(file='~/Desktop/LSE/code/hbsts_ar_re.stan',
+      modeli <- sampling(stan_mod_hbstsAR_re,
                      data = list(T=pre.time,T_forecast=post.time,
                                  N=pre.obs,N_forecast=post.obs,
                                  M=dimx,y=pre.ys,
@@ -267,7 +271,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
         ls <- list(sigma2_mu=1,mu_err=rep(0,pre.time))
         lls <- vector("list",1)
         init_fun <- lapply(lls,function(...) ls)
-        modeli <- stan(file='~/Desktop/LSE/code/hbsts_ll_re.stan',
+        modeli <- sampling(stan_mod_hbstsLL_re,
                        data = list(T=pre.time,T_forecast=post.time,
                                    N=pre.obs,N_forecast=post.obs,
                                    M=dimx,y=pre.ys,
@@ -289,7 +293,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
           ls <- list(sigma2_mu=1,mu_err=rep(0,pre.time),sigma2_delta=1,delta_err=rep(0,pre.time))
           lls <- vector("list",1)
           init_fun <- lapply(lls,function(...) ls)
-          modeli <- stan(file='~/Desktop/LSE/code/hbsts_gllt_re.stan',
+          modeli <- sampling(stan_mod_hbstsGLLT_re,
                          data = list(T=pre.time,T_forecast=post.time,
                                      N=pre.obs,N_forecast=post.obs,
                                      M=dimx,y=pre.ys,
