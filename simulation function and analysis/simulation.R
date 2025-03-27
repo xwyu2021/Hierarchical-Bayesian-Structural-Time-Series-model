@@ -150,8 +150,8 @@ datagen.arima.ar1 <- function(T=200,dimx = 5,sig.x=sig.x,mu.x=mu.x,beta,
   # (3): simulate y
   trend=rep(0,T) #Trend component
   delta=rep(0,T) #Slope
-  trend[1] <- rnorm(1,mean=0,sd=0.1)
-  delta[1] <- rnorm(1,mean=0,sd=0.1)
+  trend[1] <- rnorm(1,mean=0,sd=sd_trend)
+  delta[1] <- rnorm(1,mean=0,sd=sd_trend)
   if(ar == FALSE){
     # SET A LOCAL LEVEL MODEL FOR TREND
     for (i in 2:T){
