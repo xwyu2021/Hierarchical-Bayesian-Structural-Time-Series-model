@@ -315,8 +315,8 @@ ggplot(aes(x=time,y=effect),data=efdat) +
                      legend.position = 'none',
                      axis.text.x = element_text(angle = 45, hjust = 1),
                      panel.grid.minor = element_blank())+
-  geom_point(aes(shape=significant,colour = significant),size=3.5) +
-  scale_color_manual(values=c('TRUE'='orange','FALSE'='grey2')) +labs(x='time (years)')
+  geom_point(aes(colour = significant),size=3.5) +
+  scale_color_manual(values=c('TRUE'='orange','FALSE'='grey2')) +labs(x='Time (years)',y='Effect')
 
 # - half year
 half <- seq(as.Date('2014-05-01'),as.Date('2017-11-01'), by = "6 months")
@@ -341,8 +341,8 @@ ggplot(aes(x=time,y=effect),data=efdat) +
                      legend.position = 'none',
                      axis.text.x = element_text(angle = 45, hjust = 1),
                      panel.grid.minor = element_blank())+
-  geom_point(aes(shape=significant,colour = significant),size=3.5) +
-  scale_color_manual(values=c('TRUE'='orange','FALSE'='grey2')) + labs(x='time (years)')
+  geom_point(aes(colour = significant),size=3.5) +
+  scale_color_manual(values=c('TRUE'='orange','FALSE'='grey2')) + labs(x='Time (years)',y='Effect')
 
 # - year
 
@@ -367,8 +367,8 @@ ggplot(aes(x=time,y=effect),data=efdat) +
                      legend.position = 'none',
                      axis.text.x = element_text(angle = 45, hjust = 1),
                      panel.grid.minor = element_blank())+
-  geom_point(aes(shape=significant,colour = significant),size=3.5) +
-  scale_color_manual(values=c('TRUE'='orange','FALSE'='grey2')) + labs(x='time (years)')
+  geom_point(aes(colour = significant),size=3.5) +
+  scale_color_manual(values=c('TRUE'='orange','FALSE'='grey2')) + labs(x='Time (years)',y='Effect')
 
 
 
