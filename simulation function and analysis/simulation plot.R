@@ -445,7 +445,8 @@ plot(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,1,1]),
                           sd(mcar9$avgeffectall[,1,2]),
                           sd(mcar10$avgeffectall[,1,2])),type='l',
      xlab=expression(sigma[mu]),ylab='sd of estimated average treatment effect',
-     ylim=c(0.2,10),cex.lab=1.5,cex.axis = 1.5,lwd=2)
+     ylim=c(0.2,10),cex.lab=1.5,cex.axis = 1.5,lwd=2,col='orange')
+
 lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,2,2]),
                            sd(mcar2$avgeffectall[,2,2]),
                            sd(mcar3$avgeffectall[,2,2]),
@@ -455,7 +456,7 @@ lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,2,2]),
                            sd(mcar7$avgeffectall[,2,2]),
                            sd(mcar8$avgeffectall[,2,2]),
                            sd(mcar9$avgeffectall[,2,2]),
-                           sd(mcar10$avgeffectall[,2,2])),col=2,lwd=2)
+                           sd(mcar10$avgeffectall[,2,2])),col='skyblue',lwd=4)
 lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,3,2]),
                            sd(mcar2$avgeffectall[,3,2]),
                            sd(mcar3$avgeffectall[,3,2]),
@@ -465,7 +466,8 @@ lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,3,2]),
                            sd(mcar7$avgeffectall[,3,2]),
                            sd(mcar8$avgeffectall[,3,2]),
                            sd(mcar9$avgeffectall[,3,2]),
-                           sd(mcar10$avgeffectall[,3,2])),col=4,lwd=2)
+                           sd(mcar10$avgeffectall[,3,2])),col=1,lwd=2)
+
 
 lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,1,7]),
                            sd(mcar2$avgeffectall[,1,7]),
@@ -476,7 +478,7 @@ lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,1,7]),
                            sd(mcar7$avgeffectall[,1,7]),
                            sd(mcar8$avgeffectall[,1,7]),
                            sd(mcar9$avgeffectall[,1,7]),
-                           sd(mcar10$avgeffectall[,1,7])),col=1,lty=2,lwd=2)
+                           sd(mcar10$avgeffectall[,1,7])),col='orange',lwd=2)
 lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,2,7]),
                            sd(mcar2$avgeffectall[,2,7]),
                            sd(mcar3$avgeffectall[,2,7]),
@@ -486,7 +488,7 @@ lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,2,7]),
                            sd(mcar7$avgeffectall[,2,7]),
                            sd(mcar8$avgeffectall[,2,7]),
                            sd(mcar9$avgeffectall[,2,7]),
-                           sd(mcar10$avgeffectall[,2,7])),col=2,lty=2,lwd=2)
+                           sd(mcar10$avgeffectall[,2,7])),col='skyblue',lwd=4)
 lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,3,7]),
                            sd(mcar2$avgeffectall[,3,7]),
                            sd(mcar3$avgeffectall[,3,7]),
@@ -496,9 +498,12 @@ lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,3,7]),
                            sd(mcar7$avgeffectall[,3,7]),
                            sd(mcar8$avgeffectall[,3,7]),
                            sd(mcar9$avgeffectall[,3,7]),
-                           sd(mcar10$avgeffectall[,3,7])),col=4,lty=2,lwd=2)
+                           sd(mcar10$avgeffectall[,3,7])),col=1,lwd=2)
 text(0.7,1,'effect size=0.1',cex=1.4, pos=3)
 text(0.7,6,'effect size=3',cex=1.4, pos=3)
+legend(0.1,10,legend=c('HBSTS','HS-BSTS','SS-BSTS'),col=c('orange','skyblue','black'),lty=c(1,1,1),lwd=c(2,3,2))
+
+
 
 
 
