@@ -57,18 +57,13 @@ run_flex_bsts <- function(data=bsts.zoo.qua,pre.period=pre.period.qua,
                                                slope.sigma.prior = sd.prior,
                                                initial.level.prior = NormalPrior(0,1),
                                                initial.slope.prior = NormalPrior(0,1))
-        }else{
-          if(trend == 'Season'){
-            ss.train <- AddLocalLevel(list(),y=data.modeling[,1],
-                                      sigma.prior= sd.prior,
-                                      initial.state.prior = NormalPrior(0,1))
-            ss.train <- AddSeasonal(ss.train,y=data.modeling[,1],nseasons = 4,
-                                    initial.state.prior = NormalPrior(0,1),
-                                    sigma.prior = sd.prior)
-          }
         }
       }
     }
+  }
+  if (model.args$nseasons > 1) {
+    ss.train <- AddSeasonal(ss.train, y=data.modeling[,1],
+                            nseasons = model.args$nseasons)
   }
   formula <- paste0(names(data)[1], " ~ .")
   if(!is.null(modelsize)){
