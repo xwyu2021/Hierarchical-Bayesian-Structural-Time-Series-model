@@ -9,7 +9,7 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                       post.obs =post.obs.qua,index_pre=index_pre,
                       K=K,x.obs=x.obs, x.cum.count=x.cum.count,index_post=index_post,
                       niter=4000,nchains=1,time_index=time_index,alpha=0.05,cycles=c(1),
-                      emp.mean.y,trend,modelsize=3,burn=1000,adapt=0.92,ind=FALSE,hdi=FALSE){
+                      emp.mean.y,trend,modelsize=3,burn=1000,adapt=0.92,ind=FALSE,hdi=FALSE,presence_matrix=presence_matrix){
   
   expect.size <- modelsize
   total.size <- dimx
@@ -36,7 +36,7 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                    nu_local=1, 
                                    slab_scale = sqrt(0.2), 
                                    slab_df = 50,c_df=50,tr_df=32,
-                                   sdy = 0.01),
+                                   sdy = 0.01,presence = presence_matrix),
                        iter=niter, chains=nchains, control = list(adapt_delta=adapt),
                        warmup=burn,refresh=burn,init=init_fun)
   }else{
@@ -57,7 +57,7 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                      nu_local=1, 
                                      slab_scale = sqrt(0.2), 
                                      slab_df = 50,c_df=50,tr_df=32,
-                                     sdy = 0.01),
+                                     sdy = 0.01,presence = presence_matrix),
                          iter=niter, chains=nchains, control = list(adapt_delta=adapt),
                          warmup=burn,refresh=burn,init=init_fun)
     }else{
@@ -78,7 +78,7 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                    nu_local=1, 
                                    slab_scale = sqrt(0.2), 
                                    slab_df = 50,c_df=50,tr_df=32,
-                                   sdy = 0.01),
+                                   sdy = 0.01,presence = presence_matrix),
                        iter=niter, chains=nchains, control = list(adapt_delta=adapt),
                        warmup=burn,refresh=burn,init=init_fun)
       }else{
@@ -99,7 +99,7 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                          nu_local=1, 
                                          slab_scale = sqrt(0.2), 
                                          slab_df = 50,c_df=50,tr_df=32,
-                                         sdy = 0.01),
+                                         sdy = 0.01,presence = presence_matrix),
                              iter=niter, chains=nchains, control = list(adapt_delta=adapt),
                              warmup=burn,refresh=burn,init=init_fun)
         }
@@ -117,8 +117,12 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
     }
     y.samples <- cbind(fitted$alpha[,1:pre.time],yhatest)
   }else{
-    y.samples <- cbind(fitted$alpha[,1:pre.time],fitted$alpha_forecast_unscale)
+    #y.samples <- cbind(fitted$alpha[,1:pre.time],fitted$alpha_forecast_unscale)
+    y.samples <- cbind(fitted$alpha_pred_unscale[,1:pre.time],fitted$alpha_forecast_unscale)
   }
+  
+  #y.samples <- cbind(exp(fitted$alpha[,1:pre.time] + matrix(fitted$sigma2_obs,nrow=niter-burn,ncol=pre.time)/2),
+  #                   exp(fitted$alpha_forecast_unscale + matrix(fitted$sigma2_obs,nrow=niter-burn,ncol=15)/2))
   
   state.samples <- cbind(fitted$mu+fitted$f, fitted$mu_forecast+fitted$f_forecast) 
   state.samples <- matrix(fitted$alpha_sd,nrow=(niter-burn)*nchains,ncol=pre.time+post.time) * state.samples + matrix(fitted$alpha_mean,nrow=(niter-burn)*nchains,ncol=pre.time+post.time)
@@ -213,7 +217,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                       x_strata=x.strata,NS=NS,pre_strata = pre.strata.mon,
                       x_psu=x.psu,NC=NC,pre_psu = pre.psu.mon,
                       niter=4000,nchains=1,time_index=time_index,alpha=0.05,cycles=c(1),
-                      emp.mean.y,trend,modelsize=3,burn=1000,adapt=0.92,ind=FALSE,hdi=FALSE){
+                      emp.mean.y,trend,modelsize=3,burn=1000,adapt=0.92,ind=FALSE,hdi=FALSE,presence_matrix = presence_matrix){
   
   expect.size <- modelsize
   total.size <- dimx
@@ -241,7 +245,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                slab_scale = 0.1, 
                                slab_df = 50,c_df=50,tr_df=32,
                                sdy = 0.01,x_strata,NS,pre_strata,
-                               x_psu,NC,pre_psu),
+                               x_psu,NC,pre_psu,presence = presence_matrix),
                    iter=4000, chains=1, control = list(adapt_delta=adapt),
                    warmup=3000,refresh=1000,init=init_fun)
   }else{
@@ -263,7 +267,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                  slab_scale = sqrt(0.2), 
                                  slab_df = 50,c_df=50,tr_df=32,
                                  sdy = 0.01,x_strata,NS,pre_strata,
-                                 x_psu,NC,pre_psu),
+                                 x_psu,NC,pre_psu,presence = presence_matrix),
                      iter=niter, chains=nchains, control = list(adapt_delta=adapt),
                      warmup=burn,refresh=1000,init=init_fun)
     }else{
@@ -285,7 +289,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                    slab_scale = 0.1, 
                                    slab_df = 50,c_df=50,tr_df=32,
                                    sdy = 0.01,x_strata,NS,pre_strata,
-                                   x_psu,NC,pre_psu),
+                                   x_psu,NC,pre_psu,presence = presence_matrix),
                        iter=4000, chains=1, control = list(adapt_delta=adapt),
                        warmup=3000,refresh=1000,init=init_fun)
       }else{
@@ -307,7 +311,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                                      slab_scale = 0.1, 
                                      slab_df = 50,c_df=50,tr_df=32,
                                      sdy = 0.01,x_strata,NS,pre_strata,
-                                     x_psu,NC,pre_psu),
+                                     x_psu,NC,pre_psu,presence = presence_matrix),
                          iter=4000, chains=1, control = list(adapt_delta=adapt),
                          warmup=3000,refresh=1000,init=init_fun)
         }
@@ -325,7 +329,7 @@ run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
     }
     y.samples <- cbind(fitted$alpha[,1:pre.time],yhatest)
   }else{
-    y.samples <- cbind(fitted$alpha[,1:pre.time],fitted$alpha_forecast_unscale)
+    y.samples <- cbind(fitted$alpha_pred_unscale[,1:pre.time],fitted$alpha_forecast_unscale)
   }
   state.samples <- cbind(fitted$mu+fitted$f, fitted$mu_forecast+fitted$f_forecast) 
   state.samples <- matrix(fitted$alpha_sd,nrow=(niter-burn)*nchains,ncol=pre.time+post.time) * state.samples + matrix(fitted$alpha_mean,nrow=(niter-burn)*nchains,ncol=pre.time+post.time)
