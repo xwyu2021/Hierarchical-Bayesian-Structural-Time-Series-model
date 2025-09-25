@@ -6,109 +6,58 @@
 ## missing data imputation following Jeffery et al. 2024
 ## this dataset contains more covariates than data1 (finaldata_weight.RData)
 
-datax <- readRDS("~/Desktop/LSE/data/finaldata_imputed.RData")
-aMat <- readRDS("aMat_england.rds") # this dataset require special liscience from understanding society
-datax$LAD21NM <- as.factor(datax$LAD21NM)
+testdf <- readRDS("~/Desktop/LSE/data/finaldata_imputed.RData")
+aMat <- readRDS("~/Desktop/LSE/data/aMat_england.rds") # this dataset require special liscience from understanding society
+testdf$LAD21NM <- as.factor(datax$LAD21NM)
 aMatNumber <- data.frame(LAD21NM = rownames(aMat), LADNM21_id = 1:309)
-datax$aMatNumber <- aMatNumber$LADNM21_id[match(datax$LAD21NM,aMatNumber$LAD21NM)]
+testdf$aMatNumber <- aMatNumber$LADNM21_id[match(datax$LAD21NM,aMatNumber$LAD21NM)]
 
-datax$policyDate <-  as.Date("2014-05-14")
-datax$mediaDate <- as.Date("2017-11-28") 
-datax <- datax %>%  dplyr::mutate(quater = (lubridate::interval(start = policyDate, end = interviewDate) %/% months(3)))
-datax <- datax %>% dplyr::mutate(quaterSince = if_else(policyDate <= interviewDate,quater + 1,0))
-datax <- datax %>%  dplyr::mutate(quater2 = (lubridate::interval(start = mediaDate, end = interviewDate) %/% months(3)))
-datax <- datax %>% dplyr::mutate(quaterSince2 = ifelse(mediaDate <= interviewDate,quater2+1,0))
-datax$quater <- datax$quater - min(datax$quater) + 1
-datax$quater <- as.factor(datax$quater)
-datax$quaterSince <- as.factor(datax$quaterSince)
-datax$quaterSince2 <- as.factor(datax$quaterSince2)
-datax$quater <- as.numeric(datax$quater)
-datax$quaterSince <- as.numeric(datax$quaterSince)
-datax$quaterSince2 <- as.numeric(datax$quaterSince2)
+data1 <- readRDS('finaldata_weight.RData')
+testdf$psu <- as.factor(data1$psu)
 
-datax <- datax %>% mutate(quater.carib = case_when(eth3 == "carib" ~ quater, TRUE ~ 1))
-datax <- datax %>% mutate(quater.afric = case_when(eth3 == "afric" ~ quater, TRUE ~ 1))
-datax <- datax %>% mutate(quater.india = case_when(eth3 == "india" ~ quater, TRUE ~ 1))
-datax <- datax %>% mutate(quater.pakis = case_when(eth3 == "pakis" ~ quater, TRUE ~ 1))
-datax <- datax %>% mutate(quater.bangl = case_when(eth3 == "bangl" ~ quater, TRUE ~ 1))
-datax <- datax %>% mutate(quater.mixed = case_when(eth3 == "mixed" ~ quater, TRUE ~ 1))
-datax <- datax %>% mutate(quater.asian = case_when(eth3 == "asian" ~ quater, TRUE ~ 1))
-datax <- datax %>% mutate(quater.other = case_when(eth3 == "other" ~ quater, TRUE ~ 1))
-
-datax$quater.carib <- as.factor(datax$quater.carib)
-datax$quater.afric <- as.factor(datax$quater.afric)
-datax$quater.india <- as.factor(datax$quater.india)
-datax$quater.pakis <- as.factor(datax$quater.pakis)
-datax$quater.bangl <- as.factor(datax$quater.bangl)
-datax$quater.mixed <- as.factor(datax$quater.mixed)
-datax$quater.asian <- as.factor(datax$quater.asian)
-datax$quater.other <- as.factor(datax$quater.other)
-
-datax$quater.carib <- as.numeric(datax$quater.carib)
-datax$quater.afric <- as.numeric(datax$quater.afric)
-datax$quater.india <- as.numeric(datax$quater.india)
-datax$quater.pakis <- as.numeric(datax$quater.pakis)
-datax$quater.bangl <- as.numeric(datax$quater.bangl)
-datax$quater.mixed <- as.numeric(datax$quater.mixed)
-datax$quater.asian <- as.numeric(datax$quater.asian)
-datax$quater.other <- as.numeric(datax$quater.other)
+#testdf <- readRDS('final_imputed_noc.RData')
+#testdf$psu <- as.factor(data1$psu)
 
 
-datax <- datax %>% mutate(quaterSince.carib = case_when(eth3 == "carib" ~ quaterSince, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince.afric = case_when(eth3 == "afric" ~ quaterSince, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince.india = case_when(eth3 == "india" ~ quaterSince, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince.pakis = case_when(eth3 == "pakis" ~ quaterSince, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince.bangl = case_when(eth3 == "bangl" ~ quaterSince, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince.mixed = case_when(eth3 == "mixed" ~ quaterSince, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince.asian = case_when(eth3 == "asian" ~ quaterSince, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince.other = case_when(eth3 == "other" ~ quaterSince, TRUE ~ 1))
+testdf$policyDate <-  as.Date("2014-05-14")
+testdf$mediaDate <- as.Date("2017-11-28") 
+testdf <- testdf[testdf$interviewDate < testdf$mediaDate,]
 
-datax$quaterSince.carib <- as.factor(datax$quaterSince.carib)
-datax$quaterSince.afric <- as.factor(datax$quaterSince.afric)
-datax$quaterSince.india <- as.factor(datax$quaterSince.india)
-datax$quaterSince.pakis <- as.factor(datax$quaterSince.pakis)
-datax$quaterSince.bangl <- as.factor(datax$quaterSince.bangl)
-datax$quaterSince.mixed <- as.factor(datax$quaterSince.mixed)
-datax$quaterSince.asian <- as.factor(datax$quaterSince.asian)
-datax$quaterSince.other <- as.factor(datax$quaterSince.other)
+testdf <- testdf %>%  dplyr::mutate(quater = (lubridate::interval(start = policyDate, end = interviewDate) %/% months(1)))
+testdf <- testdf %>% dplyr::mutate(quaterSince = if_else(policyDate <= interviewDate,quater + 1,0))
+testdf$quater <- as.numeric(testdf$quater) #  -64-42 just time counts
+testdf$quaterSince <- as.factor(testdf$quaterSince) 
+testdf$quaterSince <- as.numeric(testdf$quaterSince) #1:44
+testdf$time <- as.factor(testdf$quater)
+testdf$time <- as.numeric(testdf$time) # 1-107
+testdf <- testdf %>% mutate(experiod = case_when(interviewDate < policyDate ~ "0", interviewDate >= policyDate ~ "1"))
+testdf$experiod <- as.factor(testdf$experiod)
+testdf$experiod <- as.numeric(testdf$experiod)
+testdf$experiod <- as.factor(testdf$experiod)
 
-datax$quaterSince.carib <- as.numeric(datax$quaterSince.carib)
-datax$quaterSince.afric <- as.numeric(datax$quaterSince.afric)
-datax$quaterSince.india <- as.numeric(datax$quaterSince.india)
-datax$quaterSince.pakis <- as.numeric(datax$quaterSince.pakis)
-datax$quaterSince.bangl <- as.numeric(datax$quaterSince.bangl)
-datax$quaterSince.mixed <- as.numeric(datax$quaterSince.mixed)
-datax$quaterSince.asian <- as.numeric(datax$quaterSince.asian)
-datax$quaterSince.other <- as.numeric(datax$quaterSince.other)
+datasub <- testdf[testdf$eth1 %in% c(1,14),] ## select the two groups to be compared
+datasub$group <- 'treated'
+datasub$group[datasub$eth1 == 1] <- 'control' ## white group is the reference
+
+datasub <- datasub %>% mutate(experiod = case_when(interviewDate < policyDate ~ "0", interviewDate >= policyDate ~ "1"))
+datasub$experiod <- as.factor(datasub$experiod)
+datasub$experiod <- as.numeric(datasub$experiod) ## 1,2
+
+datasub$experiod.carib <- datasub$experiod
+datasub$experiod.carib[datasub$group == 'control'] <- 1
+datasub$experiod.carib <- as.factor(datasub$experiod.carib)
+datasub$experiod <- as.factor(datasub$experiod)
+
+datasub<- datasub %>% mutate(quater.carib = case_when(group == "treated" ~ quater, TRUE ~ 1))
+datasub$quater.carib <- as.factor(datasub$quater.carib)
+datasub$quater.carib <- as.numeric(datasub$quater.carib)
 
 
-### collect datax from imputed and start from here!
-datax <- datax %>% mutate(quaterSince2.carib = case_when(eth3 == "carib" ~ quaterSince2, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince2.afric = case_when(eth3 == "afric" ~ quaterSince2, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince2.india = case_when(eth3 == "india" ~ quaterSince2, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince2.pakis = case_when(eth3 == "pakis" ~ quaterSince2, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince2.bangl = case_when(eth3 == "bangl" ~ quaterSince2, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince2.asian = case_when(eth3 == "asian" ~ quaterSince2, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince2.other = case_when(eth3 == "other" ~ quaterSince2, TRUE ~ 1))
-datax <- datax %>% mutate(quaterSince2.mixed = case_when(eth3 == "mixed" ~ quaterSince2, TRUE ~ 1))
+datasub$quaterSince.carib <- datasub$quaterSince
+datasub$quaterSince.carib[datasub$group == 'control'] <- 1
+datasub$quaterSince.carib <- as.factor(datasub$quaterSince.carib)
+datasub$quaterSince.carib <- as.numeric(datasub$quaterSince.carib)
 
-datax$quaterSince2.carib <- as.factor(datax$quaterSince2.carib)
-datax$quaterSince2.afric <- as.factor(datax$quaterSince2.afric)
-datax$quaterSince2.india <- as.factor(datax$quaterSince2.india)
-datax$quaterSince2.pakis <- as.factor(datax$quaterSince2.pakis)
-datax$quaterSince2.bangl <- as.factor(datax$quaterSince2.bangl)
-datax$quaterSince2.asian <- as.factor(datax$quaterSince2.asian)
-datax$quaterSince2.other <- as.factor(datax$quaterSince2.other)
-datax$quaterSince2.mixed <- as.factor(datax$quaterSince2.mixed)
-
-datax$quaterSince2.carib <- as.numeric(datax$quaterSince2.carib)
-datax$quaterSince2.afric <- as.numeric(datax$quaterSince2.afric)
-datax$quaterSince2.india <- as.numeric(datax$quaterSince2.india)
-datax$quaterSince2.pakis <- as.numeric(datax$quaterSince2.pakis)
-datax$quaterSince2.bangl <- as.numeric(datax$quaterSince2.bangl)
-datax$quaterSince2.asian <- as.numeric(datax$quaterSince2.asian)
-datax$quaterSince2.other <- as.numeric(datax$quaterSince2.other)
-datax$quaterSince2.mixed <- as.numeric(datax$quaterSince2.mixed)
 
 pc.u <- 1; pc.alpha <- 0.01; pc.u.phi <- 0.5; pc.alpha.phi <- 2/3
 hyper.pc <- list(prec = list(prior = 'pc.prec', param = c(pc.u, pc.alpha)))
@@ -117,33 +66,20 @@ hyper.pc.space <- list(prec = list(prior = 'pc.prec', param = c(pc.u, pc.alpha))
 hyper_pc_time <- list(prec = list(prior = 'pc.prec', param = c(pc.u, pc.alpha)))
 hyper_pc_space_struc <- list(prec = list(prior = 'pc.prec', param = c(pc.u, pc.alpha)), phi = list(prior = 'pc', param = c(pc.u.phi, pc.alpha.phi)))
 
-## compare a group vs white group: e.g. caribbean vs white
-subdatax <- datax[datax$eth3 %in% c('aawhit','carib'),]
-subdatax <- subdatax%>% dplyr::mutate(eth4 = dplyr::case_when(eth3 %in% c('aawhit') ~ 'White',
-                                                               eth3 %in% c('carib') ~ 'carib',
-                                                               TRUE ~ 'mixed'))
-subdatax$eth4 <- as.factor(subdatax$eth4)
-subdatax <- subdatax %>% dplyr::mutate(eth4 = eth4 %>% relevel(.,ref='White'))
-subdatax<- subdatax[subdatax$experiod %in% c(1,2),]
-subdatax$experiod <- as.numeric(subdatax$experiod)
-subdatax$experiod <- as.factor(subdatax$experiod)
 
-modelq <- inla(
-  scghq1 ~ eth3 + quater + experiod + quaterSince + quaterSince2 +
-    quater.carib + #quater.afric + quater.india + quater.pakis + quater.bangl + quater.asian + quater.mixed + quater.other + 
-    experiod.carib + #experiod.afric + experiod.india + experiod.pakis + experiod.bangl + experiod.asian + experiod.mixed + experiod.other +
-    quaterSince.carib + #quaterSince.afric + quaterSince.india + quaterSince.pakis + quaterSince.bangl + quaterSince.asian + quaterSince.mixed + quaterSince.other +
-    quaterSince2.carib + #quaterSince2.afric + quaterSince2.india + quaterSince2.pakis + quaterSince2.bangl + quaterSince2.asian + quaterSince2.mixed + quaterSince2.other +
-    age + sex + urban + decileIMD + nchild + 
-    ukborn_imp + mastat_imp + hiqual_imp + jbstat_imp + tenure_imp + incomequin_imp + health_imp+
+itsFormula.mon <- as.formula(
+  scghq1 ~ group + 
+    quater + experiod + quaterSince + 
+    quater.carib +experiod.carib + quaterSince.carib + 
+    age + sex  + decileIMD  + urban + nchild+  ukborn_imp +
+    hiqual_imp + tenure_imp+  jbstat_imp +mastat_imp  + incomequin_imp + health_imp +
     f(strata, model = 'iid', hyper= hyper.pc) + 
-    f(year,
+    f(psu, model = 'iid', hyper= hyper.pc) + 
+    f(time,
       model = 'rw1',
       hyper= hyper.pc) + 
-    f(aMatNumber, graph = aMat, model = 'bym2', hyper= hyper_pc_space_struc, scale.model = TRUE, adjust.for.con.comp = TRUE),
-  family='gaussian',
-  data = subdatax,control.compute=list(config = TRUE))
-modelq$summary.fixed
+    f(aMatNumber, graph = aMat, model = 'bym2', hyper= hyper_pc_space_struc, scale.model = TRUE, adjust.for.con.comp = TRUE))
+
 
 my.summary <- function(x, CI = 0.95) {
   lowerCI <- (1 - CI)/2
@@ -163,49 +99,107 @@ my.theme<-function(...){
         legend.key=element_rect(fill=NA),
         ...)
 }
-n.sims <- 1000
-samp.all <- inla.posterior.sample(n = n.sims, result = modelq, intern = TRUE)
+
+
+
+
+fit1 <- inla(itsFormula.mon,family='gaussian',
+             data = testdf,control.compute=list(config = TRUE),control.predictor = list(compute = TRUE))
+
+fit1$summary.fixed
+
+
+
+
+data_pred <- datasub[datasub$group == 'treated' & datasub$experiod !='1',]
+
+data_pred$quaterSince.carib <- 1
+data_pred$experiod.carib <- '1'
+data_pred$scghq1 <- NA 
+data_extend <- rbind(datasub,data_pred)
+fit2 <- inla(itsFormula.mon,family='gaussian',
+             data = data_extend,control.compute=list(config = TRUE),
+             control.predictor = list(compute = TRUE,link=1))
+n_samples <- 1000  
+samples <- inla.posterior.sample(n_samples, fit2)
+start.idx <- dim(datasub)[1] + 1
+end.idx <- dim(data_extend)[1]
 theta.predictor.a <-
-  lapply(X = samp.all,
+  lapply(X = samples,
          FUN = function(x) {x$latent[startsWith(rownames(x$latent), 'Predictor:')]}) %>%
   unlist() %>%
-  matrix(., ncol = n.sims)
-colnames(theta.predictor.a) <- paste0('theta:', 1:n.sims)
-theta.predictor <- 
-  cbind(subdatax %>% 
-          dplyr::select(scghq1,eth4,quater,experiod,quaterSince,quater),#month), 
-        theta.predictor.a)
-before.after.temporal.data <-
-  theta.predictor %>%
+  matrix(., ncol = n_samples)
+colnames(theta.predictor.a) <- paste0('theta:', 1:n_samples)
+pred.samples <- theta.predictor.a[start.idx:end.idx,]
+pred.original <- theta.predictor.a[1:(start.idx-1),]
+pred.new <- pred.original
+pred.new[datasub$group == 'treated' & datasub$experiod !='1',] <- pred.samples
+new.predictor <- 
+  cbind(datasub %>% 
+          dplyr::select(scghq1,group,time,experiod,
+                        age, sex, urban,decileIMD,
+                        nchild,ukborn_imp, mastat_imp, hiqual_imp, jbstat_imp,
+                        tenure_imp, incomequin_imp, health_imp,
+                        strata,quater),#,,aMatNumber,month),#month), 
+        pred.new)
+
+origin.predictor <- cbind(datasub %>% 
+                            dplyr::select(scghq1,group,time,experiod,
+                                          age, sex, urban,decileIMD,
+                                          nchild,ukborn_imp, mastat_imp, hiqual_imp, jbstat_imp,
+                                          tenure_imp, incomequin_imp, health_imp,
+                                          strata,quater),#,,aMatNumber,month),#month), 
+                          pred.original)
+
+all.predictor <- rbind(origin.predictor,new.predictor[datasub$group == 'treated' & datasub$experiod !='1',])
+all.predictor$newgroup <- all.predictor$group
+num.pred <- length(which(datasub$group == 'treated' & datasub$experiod !='1'))
+all.predictor$newgroup[(dim(all.predictor)[1]-num.pred+1):dim(all.predictor)[1]] <- 'treated-counterfactual'
+
+all.plotdata <-
+  all.predictor %>%
   dplyr::summarise(dplyr::across(dplyr::starts_with('theta:'), mean),
-                   .by = c('eth4', 'quater')) %>%
+                   .by = c('newgroup', 'time')) %>%
   dplyr::mutate(dplyr::select(., starts_with('theta:')) %>% 
                   apply(., 1, my.summary) %>% 
                   lapply(., data.frame) %>%
                   do.call(rbind, .)) %>%
   dplyr::select(-starts_with('theta:'))
-levels(before.after.temporal.data$eth4)[levels(before.after.temporal.data$eth4) == "carib"] = "Black Caribbean"
-before.after.temporal.data$quater = before.after.temporal.data$quater - 22
-before.after.temporal.plot <-
-  ggplot2::ggplot(data = before.after.temporal.data[before.after.temporal.data$eth4 %in% c('White','Black Caribbean'),],
-                  aes(x = quater, y = mean, group = eth4, colour = eth4, fill = eth4)) +
-  ggplot2::geom_vline(xintercept = 0, colour = 'black', linetype = 'dashed') +
+all.plot<-
+  ggplot2::ggplot(data = all.plotdata, aes(x = time, y = mean, group = newgroup, colour = newgroup, fill = newgroup)) +
+  ggplot2::geom_vline(xintercept = 43, colour = 'black', linetype = 'dashed') +
   ggplot2::geom_point() +
   ggplot2::geom_line() +
   ggplot2::geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.25, colour = NA) +
-  ggplot2::scale_colour_manual(values = c('orange2','blue3'))+
-  ggplot2::scale_fill_manual(values = c('orange2','blue3'))+
-  ggplot2::scale_y_continuous(limits = c(10, 14), breaks = seq(10, 14, by = 1)) +
-  ggplot2::labs(x = 'time (quarters)', 
-                y = 'Self reported mental ill health (GHQ-12)') +
+  ggplot2::scale_colour_manual(values = c('blue3', 'orange2',"darkgreen"))+#,"#009966")) +
+  ggplot2::scale_fill_manual(values = c('blue3', 'orange2',"darkgreen"))+#,"#009966")) +
+  ggplot2::labs(x = 'time (months)', 
+                y = 'scaled outcome') +
   my.theme(legend.title = element_blank(),
            legend.position = 'bottom',
-           text = element_text(size = 12)); before.after.temporal.plot
+           text = element_text(size = 12)); all.plot
 
+scaledall.predictor <- as.matrix(all.predictor)
+scalecounter <- scaledall.predictor[(dim(all.predictor)[1]-num.pred+1):dim(all.predictor)[1],19:1018]
+scalecounter <- apply(scalecounter, 2, as.numeric)
+scalefit <-matrix(rep(datasub$scghq1[which(datasub$group == 'treated' & datasub$experiod !='1')],1000),
+                  ncol=1000,byrow = FALSE)
+scalediff <- scalefit - scalecounter
 
+scalediff <- cbind(scaledall.predictor[(dim(all.predictor)[1]-num.pred+1):dim(all.predictor)[1],4],scalediff)
+colnames(scalediff)[1] <- 'experiod'
+ckdf <- scalediff[as.numeric(which(scalediff[,1] == '2')),2:dim(scalediff)[2]]
+ckdf <- apply(scalediff[,2:1001], 2, as.numeric)
+ckdf <- as.data.frame(ckdf)
+ckdf$experiod <- scalediff[,1]
 
+avg <- ckdf %>%
+  dplyr::summarise(dplyr::across(dplyr::starts_with('theta:'), mean),
+                   .by=c('experiod')) %>%
+  dplyr::mutate(dplyr::select(., starts_with('theta:')) %>% 
+                  apply(., 1, my.summary) %>% 
+                  lapply(., data.frame) %>%
+                  do.call(rbind, .)) %>%
+  dplyr::select(-starts_with('theta:'))
 
-
-
-
-
+avg
