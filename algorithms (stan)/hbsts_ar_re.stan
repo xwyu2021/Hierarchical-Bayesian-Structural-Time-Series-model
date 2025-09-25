@@ -40,16 +40,15 @@ data {
   int x_psu[K]; // covariates obs
   int<lower=1> NC; // number of different stratas
   int pre_psu[N];
+  int presence[T+T_forecast,M];
 }
 
 parameters {
   vector[T] mu_err; // error of trend
   real<lower=0> sigma2_mu; // sigma^2 of error of trend
   real<lower=0> sigma2_y; // sigma^2 of y
-  real<lower=0> sigma2_obs; // sigma^2 of yit
+  //real<lower=0> sigma2_obs; // sigma^2 of yit
   real<lower=-1,upper=1> phi; // parameter of ar1
-  //matrix<lower=0>[T+T_forecast,M] sigma2_x;
-  //real<lower=0> sigma2_x;//[M];
   matrix[T+T_forecast,M] x; // est mean of obs control series
   vector[M] z; // normal(0,1) r.v. for beta
   real<lower=0> aux1_global;
@@ -61,41 +60,32 @@ parameters {
   real alpha[T];//+T_forecast]; // mean
   real<lower=-1,upper=1> kappa[M];
   real<lower=0> sigma2_xx;//[M];
-  //real<lower=0> sigma2_alpha;
-  //real alpha_pred[T_forecast];
-  //matrix[T+T_forecast,M] zeta_err;//[M];
-  //real<lower=0> sigma2_zeta;
-  //real mu_alpha;
   vector[NS] eps;
   real<lower=0> sigma2_gamma; // random effects from strata sampling
   vector[NC] eps_c;
   real<lower=0> sigma2_cluster; // random effects from cluster sampling
+  vector<lower=0>[M] sigma_obsx;
+  real<lower=0> sigma_obs; // sigma^2 of yit
+  real<lower=0> sigma_global;
 }
 
 transformed parameters {
-  //real<lower=0> sigma_alpha;
-  //sigma_alpha = sqrt(sigma2_alpha);
   real<lower=0> sigma_gamma;
   sigma_gamma= sqrt(sigma2_gamma)*0.1;
   real<lower=0> sigma_cluster;
   sigma_cluster= sqrt(sigma2_cluster)*0.1;
   real<lower=0> sigma_xx;//[M];
-  //for(i in 1:M){
-    //sigma_xx[i] = sqrt(sigma2_xx[i]);
-  //}
   sigma_xx=sqrt(sigma2_xx);
   real<lower=0,upper=1.2> sigma_y; # noise std
   sigma_y = sqrt(sigma2_y)*slab_scale;
   real<lower=0,upper=1> sigma_mu;
   sigma_mu = sqrt(sigma2_mu)*sdy;
-  real<lower=0> sigma_obs;
-  sigma_obs = sqrt(sigma2_obs);
-  //real<lower=0> sigma_x;//[M];
-  //sigma_x = sqrt(sigma2_x);
+  //real<lower=0> sigma_obs;
+  //sigma_obs = sqrt(sigma2_obs);
   vector[T] mu; 
   mu[1] = mu_err[1] * sigma_mu;
   for (t in 2:T) {
-    //mu[t] = mu[t-1] + (mu_err[t] * sigma_mu);
+    mu[t] = mu[t-1] + (mu_err[t] * sigma_mu);
     mu[t] = phi*mu[t-1] + (mu_err[t] * sigma_mu);
   }
   
@@ -104,27 +94,13 @@ transformed parameters {
   vector<lower=0>[M] lambda_tilde;
   real<lower=0> c; // slab scale
   lambda = aux1_local .* sqrt(aux2_local);
-  //lambda = aux1_local .* sqrt(aux2_local);
   tau = aux1_global * sqrt(aux2_global) * scale_global * sigma_y;
   c = slab_scale * sqrt(caux);
-  //c = 2 * sqrt(caux);
   lambda_tilde = sqrt(c^2 * square(lambda) ./ (c^2 + tau^2*square(lambda)));//+ (sigma_y^2*varx)));
   vector[M] beta; // regression coeffs
   beta = z .* lambda_tilde*tau;
   real beta0;
   beta0 = beta_aux * sigma_itcpt;
-  //matrix[T+T_forecast,M] zeta;
-  //real<lower=0> sigma_zeta;
-  //sigma_zeta = sqrt(sigma2_zeta);
-  //for(i in 1:(T+T_forecast)){
-    //for(m in 1:M){
-      //if(i == 1){
-        //zeta[i,m] = zeta_err[i,m];
-      //}else{
-        //zeta[i,m] = kappa[m] * zeta[i-1,m] + zeta_err[i,m] * sigma_zeta;
-      //}
-    //}
-  //}
   real x_mean[M];
   real<lower=0> x_sd[M];
   matrix[T+T_forecast,M] x_scale;
@@ -162,19 +138,21 @@ transformed parameters {
 
 model {
   // priors
+  
+  sigma_global ~ normal(0,10);
   sigma2_y ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   sigma2_mu ~ inv_gamma(tr_df/2,tr_df/2);
-  sigma2_obs ~ inv_gamma(0.001,0.001);
+  sigma_obs ~ cauchy(0,sigma_global);
+  sigma_obsx ~ cauchy(0,sigma_global);
+  //sigma2_obs ~ inv_gamma(0.001,0.001);
+  sigma_obs ~ cauchy(0,sigma_global);
+  sigma_obsx ~ cauchy(0,sigma_global);
   //sigma2_x ~ inv_gamma(0.001,0.001);
   //sigma2_xx ~ inv_gamma(0.001,0.001);
   sigma2_xx ~ inv_gamma(tr_df/2,tr_df/2);
   //sigma2_alpha ~ inv_gamma(0.001,0.001);
   sigma2_gamma ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   sigma2_cluster ~ inv_gamma(0.5*slab_df,0.5*slab_df);
-  //sigma2_gamma ~ inv_gamma(0.001,0.001);
-  //sigma2_cluster ~ inv_gamma(0.001,0.001);
-  //sigma_gamma ~ lognormal(0,1);
-  //sigma_cluster ~ lognormal(0,1);
   eps ~ std_normal();
   eps_c ~ std_normal();
   //sigma2_zeta ~ inv_gamma(0.001,0.001);
@@ -187,7 +165,6 @@ model {
   aux1_global ~ std_normal();
   aux2_global ~ inv_gamma(0.5*nu_global,0.5*nu_global);
   caux ~ inv_gamma(0.5*c_df,0.5*c_df);
-  //caux ~ inv_gamma(2,2);
   beta_aux ~ std_normal();
   for(i in 1:(T+T_forecast)){
     if(i == 1){
@@ -199,26 +176,29 @@ model {
     }
   }
   
-  
    for(i in 1:(T+T_forecast)){
     for(m in 1:M){
+      if(presence[i,m] == 1){
       if(m == 1){
         if(i==1){
           for(k in 1:index_x_t[1,1]){
-            x_obs[k] ~ normal(x[1,1]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obs);
+            x_obs[k] ~ normal(x[1,1]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obsx[m]);
           }
         }else{
           for(k in (index_x_t[i-1,M]+1):index_x_t[i,1]){
-            x_obs[k] ~ normal(x[i,1]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obs);
+            x_obs[k] ~ normal(x[i,1]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obsx[m]);
           }
         }
       }else{
         for(k in (index_x_t[i,m-1]+1):index_x_t[i,m]){
-          x_obs[k] ~ normal(x[i,m]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obs);
+          x_obs[k] ~ normal(x[i,m]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obsx[m]);
         }
+      }
       }
     }
   }
+  
+ 
   alpha ~ cauchy(0,1);
 
   for(i in 1:T){
@@ -229,10 +209,24 @@ model {
   for(i in 1:T){
     alpha_scale[i] ~ normal(mu[i] + f[i], sigma_y);
   }
-
+  
 }
 
 generated quantities {
+  real alpha_pred[T];
+  real mu_pred[T];
+  mu_pred[1] = mu[1];
+  for(i in 2:T){
+    mu_pred[i] = normal_rng(phi*mu_pred[i-1],sigma_mu);
+  }
+  real f_pred[T];
+  real alpha_pred_unscale[T];
+  for(i in 1:T){
+    f_pred[i] = beta0 + (x_scale[i,]*rho);
+    alpha_pred[i] = mu_pred[i] + normal_rng(f_pred[i],sigma_y);
+    alpha_pred_unscale[i] = (alpha_pred[i] * alpha_sd) + alpha_mean;
+  }
+  
   real alpha_forecast[T_forecast];
   real mu_forecast[T_forecast];
   mu_forecast[1] = normal_rng(phi*mu[T],sigma_mu);
@@ -243,7 +237,7 @@ generated quantities {
   real alpha_forecast_unscale[T_forecast];
   for(i in 1:T_forecast){
     f_forecast[i] = beta0 + (x_scale[i+T,]*rho);
-    alpha_forecast[i] = normal_rng(mu_forecast[i] + f_forecast[i],sigma_y);
+    alpha_forecast[i] = mu_forecast[i] + normal_rng(f_forecast[i],sigma_y);
     alpha_forecast_unscale[i] = (alpha_forecast[i] * alpha_sd) + alpha_mean;
   }
   real ys[index_obs_forecast[T_forecast+1]-1];

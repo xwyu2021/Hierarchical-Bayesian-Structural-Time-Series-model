@@ -19,6 +19,7 @@ data {
   real<lower=0> sdy;
   real<lower=0> c_df;
   real<lower=0> tr_df;
+  int presence[T+T_forecast,M];
 }
 
 parameters {
@@ -27,7 +28,8 @@ parameters {
   vector[T] delta_err; // error of trend
   real<lower=0> sigma2_delta; // sigma^2 of error of trend
   real<lower=0> sigma2_y; // sigma^2 of y
-  real<lower=0> sigma2_obs; // sigma^2 of yit
+  vector<lower=0>[M] sigma_obsx;
+  real<lower=0> sigma_obs; 
   matrix[T+T_forecast,M] x; // est mean of obs control series
   vector[M] z; // normal(0,1) r.v. for beta
   real<lower=0> aux1_global;
@@ -46,8 +48,6 @@ transformed parameters {
   sigma_xx=sqrt(sigma2_xx);
   real<lower=0> sigma_y; # noise std
   sigma_y = sqrt(sigma2_y)*slab_scale;
-  real<lower=0> sigma_obs;
-  sigma_obs = sqrt(sigma2_obs);
   real<lower=0,upper=1> sigma_mu;
   sigma_mu = sqrt(sigma2_mu)*sdy;
   vector[T] mu; 
@@ -108,10 +108,14 @@ transformed parameters {
 
 model {
   // priors
+  sigma_global ~ normal(0,10);
   sigma2_y ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   sigma2_mu ~ inv_gamma(tr_df/2,tr_df/2);
+  sigma_obs ~ cauchy(0,sigma_global);
+  sigma_obsx ~ cauchy(0,sigma_global);
+  
+
   sigma2_delta ~ inv_gamma(tr_df/2,tr_df/2);
-  sigma2_obs ~ inv_gamma(0.001,0.001);
   sigma2_xx ~ inv_gamma(tr_df/2,tr_df/2);
 
   mu_err ~ std_normal();
@@ -138,6 +142,7 @@ model {
   
   for(i in 1:(T+T_forecast)){
     for(m in 1:M){
+      if(presence[i,m] == 1){
       if(m == 1){
         if(i==1){
           x_obs[1:index_x_t[1,1]] ~ normal(x[1,1],sigma_obs);
@@ -146,6 +151,7 @@ model {
         }
       }else{
         x_obs[(index_x_t[i,m-1]+1):index_x_t[i,m]] ~ normal(x[i,m],sigma_obs);
+      }
       }
     }
   }
@@ -179,7 +185,8 @@ generated quantities {
   real ys[index_obs_forecast[T_forecast+1]-1];
   for(i in 1:T_forecast){
     for(j in index_obs_forecast[i]:(index_obs_forecast[i+1]-1)){
-      ys[j] = normal_rng(alpha_forecast_unscale[i],sigma_obs);
+      ys[j] = normal_rng(y_forecast_unscale[i],sigma_obs);
+      
     }
   }
 }

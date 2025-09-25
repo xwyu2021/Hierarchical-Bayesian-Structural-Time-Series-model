@@ -40,6 +40,7 @@ data {
   int x_psu[K]; // covariates obs
   int<lower=1> NC; // number of different stratas
   int pre_psu[N];
+  int presence[T+T_forecast,M];
 }
 
 parameters {
@@ -50,7 +51,8 @@ parameters {
   real<lower=-1,upper=1> phi; // parameter of ar1
   real D;
   real<lower=0> sigma2_y; // sigma^2 of y
-  real<lower=0> sigma2_obs; // sigma^2 of yit
+  vector<lower=0>[M] sigma_obsx;
+  real<lower=0> sigma_obs; 
   matrix[T+T_forecast,M] x; // est mean of obs control series
   vector[M] z; // normal(0,1) r.v. for beta
   real<lower=0> aux1_global;
@@ -81,8 +83,6 @@ transformed parameters {
   sigma_mu = sqrt(sigma2_mu)*sdy;
   real<lower=0,upper=1> sigma_delta;
   sigma_delta = sqrt(sigma2_delta)*sdy;
-  real<lower=0> sigma_obs;
-  sigma_obs = sqrt(sigma2_obs);
   vector[T] mu; 
   mu[1] = mu_err[1]*sigma_mu;
   vector[T] delta; 
@@ -143,9 +143,11 @@ transformed parameters {
 
 model {
   // priors
+  sigma_global ~ normal(0,10);
   sigma2_y ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   sigma2_mu ~ inv_gamma(tr_df/2,tr_df/2);
-  sigma2_obs ~ inv_gamma(0.001,0.001);
+  sigma_obs ~ cauchy(0,sigma_global);
+  sigma_obsx ~ cauchy(0,sigma_global);
   sigma2_xx ~ inv_gamma(tr_df/2,tr_df/2);
   sigma2_gamma ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   sigma2_cluster ~ inv_gamma(0.5*slab_df,0.5*slab_df);
@@ -177,6 +179,7 @@ model {
   
    for(i in 1:(T+T_forecast)){
     for(m in 1:M){
+      if(presence[i,m] == 1){
       if(m == 1){
         if(i==1){
           for(k in 1:index_x_t[1,1]){
@@ -191,6 +194,7 @@ model {
         for(k in (index_x_t[i,m-1]+1):index_x_t[i,m]){
           x_obs[k] ~ normal(x[i,m]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obs);
         }
+      }
       }
     }
   }

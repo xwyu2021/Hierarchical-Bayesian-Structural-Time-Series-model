@@ -40,13 +40,16 @@ data {
   int x_psu[K]; // covariates obs
   int<lower=1> NC; // number of different stratas
   int pre_psu[N];
+  int presence[T+T_forecast,M];
 }
 
 parameters {
   vector[T] mu_err; // error of trend
   real<lower=0> sigma2_mu; // sigma^2 of error of trend
   real<lower=0> sigma2_y; // sigma^2 of y
-  real<lower=0> sigma2_obs; // sigma^2 of yit
+  vector<lower=0>[M] sigma_obsx;
+  real<lower=0> sigma_obs;
+  //real<lower=0> sigma2_obs; // sigma^2 of yit
   matrix[T+T_forecast,M] x; // est mean of obs control series
   vector[M] z; // normal(0,1) r.v. for beta
   real<lower=0> aux1_global;
@@ -62,6 +65,7 @@ parameters {
   real<lower=0> sigma2_gamma; // random effects from strata sampling
   vector[NC] eps_c;
   real<lower=0> sigma2_cluster; // random effects from cluster sampling
+  real<lower=0> sigma_global;
 }
 
 transformed parameters {
@@ -80,8 +84,8 @@ transformed parameters {
   sigma_y = sqrt(sigma2_y)*slab_scale;
   real<lower=0,upper=1> sigma_mu;
   sigma_mu = sqrt(sigma2_mu)*sdy;
-  real<lower=0> sigma_obs;
-  sigma_obs = sqrt(sigma2_obs);
+  //real<lower=0> sigma_obs;
+  //sigma_obs = sqrt(sigma2_obs);
   //real<lower=0> sigma_x;//[M];
   //sigma_x = sqrt(sigma2_x);
   vector[T] mu; 
@@ -154,10 +158,11 @@ transformed parameters {
 
 model {
   // priors
+  sigma_global ~ normal(0,10);
   sigma2_y ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   sigma2_mu ~ inv_gamma(tr_df/2,tr_df/2);
-  sigma2_obs ~ inv_gamma(0.001,0.001);
-  sigma2_xx ~ inv_gamma(tr_df/2,tr_df/2);
+  sigma_obs ~ cauchy(0,sigma_global);
+  sigma_obsx ~ cauchy(0,sigma_global);
   sigma2_gamma ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   sigma2_cluster ~ inv_gamma(0.5*slab_df,0.5*slab_df);
   eps ~ std_normal();
@@ -186,6 +191,7 @@ model {
   
    for(i in 1:(T+T_forecast)){
     for(m in 1:M){
+      if(presence[i,m] == 1){
       if(m == 1){
         if(i==1){
           for(k in 1:index_x_t[1,1]){
@@ -200,6 +206,7 @@ model {
         for(k in (index_x_t[i,m-1]+1):index_x_t[i,m]){
           x_obs[k] ~ normal(x[i,m]+eps2[x_strata[k]]+eps_c2[x_psu[k]],sigma_obs);
         }
+      }
       }
     }
   }
