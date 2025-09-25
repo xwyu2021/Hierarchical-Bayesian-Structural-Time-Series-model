@@ -117,11 +117,47 @@ geweke.diag(as.matrix(modgllt$beta0))
 
 
 
-y_pred <- as.matrix(modar$alpha)
-ppc_dens_overlay(simemp.mean.y[1:35],y_pred) # simemp.mean.y is the real observed outcome after intervention (see simulation.R)
+y_pred <- as.matrix(modar$alpha_forecast_unscale)
+ppc_dens_overlay(simemp.mean.y,y_pred) # simemp.mean.y is the real observed outcome after intervention (see simulation.R)
 
-stan_dens(hsim.ar$model$bsts.model,c('sigma_mu','sigma_y','sigma_obs','sigma_xx'),nrow=1)
-stan_trace(hsim.ar$model$bsts.model,c('sigma_mu','sigma_y','sigma_obs','sigma_xx'),nrow=1) + ylab('')
+p<- stan_dens(
+  hsim$model$bsts.model,
+  pars = c("sigma_mu", "sigma_y", "sigma_obs", "sigma_obsx[1]"),nrow=2
+)
+
+p + facet_wrap(
+  ~parameter,nrow=2,
+  labeller = as_labeller(c(
+    "sigma_mu"      = "sigma[mu]",       # σ_μ
+    "sigma_y"       = "sigma",        # σ_y
+    "sigma_obs"     = "sigma[y]",      # σ_obs
+    "sigma_obsx[1]" = "sigma[x[1]]"   # σ_obsx1
+  ), label_parsed),scales='free'
+) +
+  theme(
+    strip.text = element_text(size = 16, face = "bold"),  # facet label font size
+    axis.title = element_text(size = 14),                 # axis title size
+    axis.text  = element_text(size = 12)                  # axis tick size
+  )
+
+p <- stan_trace(hsim$model$bsts.model,c("sigma_mu", "sigma_y", "sigma_obs", "sigma_obsx[1]"),nrow=2) + ylab('')
+
+p + facet_wrap(
+  ~parameter,nrow=2,
+  labeller = as_labeller(c(
+    "sigma_mu"      = "sigma[mu]",       # σ_μ
+    "sigma_y"       = "sigma",        # σ_y
+    "sigma_obs"     = "sigma[y]",      # σ_obs
+    "sigma_obsx[1]" = "sigma[x[1]]"   # σ_obsx1
+  ), label_parsed),scales='free'
+) +
+  theme(
+    strip.text = element_text(size = 16, face = "bold"),  # facet label font size
+    axis.title = element_text(size = 14),                 # axis title size
+    axis.text  = element_text(size = 12)                  # axis tick size
+  )
+
+
 check_hmc_diagnostics(hsim.ar$model$bsts.model)
 check_divergences(hsim.ar$model$bsts.model)
 check_treedepth(hsim.ar$model$bsts.model)
@@ -134,21 +170,113 @@ ess_bulk(as.matrix(modar$sigma_mu,ncol=2))
 ess_tail(as.matrix(modar$sigma_mu,ncol=2))
 
 
+###############################################################
+########### sensitivity to expected model size ################
+###############################################################
+e1 <- readRDS('simulated_data/simulation1/smallsim100_5N1.RData')
+e2 <- readRDS('simulated_data/simulation1/smallsim100_5N2.RData')
+e3 <- readRDS('simulated_data/simulation1/smallsim100_5N3.RData')
+e4 <- readRDS('simulated_data/simulation1/smallsim100_5N4.RData')
+e5 <- readRDS('simulated_data/simulation1/smallsim100_5N5.RData')
+
+d1 <- readRDS('simulated_data/simulation1/smallsim100_20N1.RData')
+d2 <- readRDS('simulated_data/simulation1/smallsim100_20N2.RData')
+d3 <- readRDS('simulated_data/simulation1/smallsim100_20N3.RData')
+d4 <- readRDS('simulated_data/simulation1/smallsim100_20N4.RData')
+d5 <- readRDS('simulated_data/simulation1/smallsim100_20N5.RData')
+d6 <- readRDS('simulated_data/simulation1/smallsim100_20N6.RData')
+d7 <- readRDS('simulated_data/simulation1/smallsim100_20N7.RData')
+d8 <- readRDS('simulated_data/simulation1/smallsim100_20N8.RData')
+d9 <- readRDS('simulated_data/simulation1/smallsim100_20N9.RData')
+d10 <- readRDS('simulated_data/simulation1/smallsim100_20N10.RData')
+d11 <- readRDS('simulated_data/simulation1/smallsim100_20N11.RData')
+d12 <- readRDS('simulated_data/simulation1/smallsim100_20N12.RData')
+d13 <- readRDS('simulated_data/simulation1/smallsim100_20N13.RData')
+d14 <- readRDS('simulated_data/simulation1/smallsim100_20N14.RData')
+d15 <- readRDS('simulated_data/simulation1/smallsim100_20N15.RData')
+d16 <- readRDS('simulated_data/simulation1/smallsim100_20N16.RData')
+d17 <- readRDS('simulated_data/simulation1/smallsim100_20N17.RData')
+d18 <- readRDS('simulated_data/simulation1/smallsim100_20N18.RData')
+d19 <- readRDS('simulated_data/simulation1/smallsim100_20N19.RData')
+d20 <- readRDS('simulated_data/simulation1/smallsim100_20N20.RData')
+# RMSE(y): $pred.error
+# MAE: $absolute.error
+# SMAPE: $SMAPE
+# RMSE(beta): $beta.error
+# RMSE(inclusion prob): $inc.error
+df.pred <- data.frame(error = c(colMeans(e1$pred.error),
+                                colMeans(e2$pred.error),
+                                colMeans(e3$pred.error),
+                                colMeans(e4$pred.error),
+                                colMeans(e5$pred.error),
+                                colMeans(d1$pred.error),
+                                colMeans(d2$pred.error),
+                                colMeans(d3$pred.error),
+                                colMeans(d4$pred.error),
+                                colMeans(d5$pred.error),
+                                colMeans(d6$pred.error),
+                                colMeans(d7$pred.error),
+                                colMeans(d8$pred.error),
+                                colMeans(d9$pred.error),
+                                colMeans(d10$pred.error),
+                                colMeans(d11$pred.error),
+                                colMeans(d12$pred.error),
+                                colMeans(d13$pred.error),
+                                colMeans(d14$pred.error),
+                                colMeans(d15$pred.error),
+                                colMeans(d16$pred.error),
+                                colMeans(d17$pred.error),
+                                colMeans(d18$pred.error),
+                                colMeans(d19$pred.error),
+                                colMeans(d20$pred.error)),
+                      Model = rep(c('HBSTS','HS-BSTS',
+                                   # 'SS-BSTS'),25),
+                                   'BSTS'),25),
+                      size = rep(c(1:5,1:20),each=3),
+                      GroupSize = c(rep(5,15),rep(20,60)))
+df.pred$error  <- df.pred$error * 200
+ggplot(df.pred[df.pred$Model != 'HS-BSTS',], aes(x = size, y = error,
+                    linetype = factor(GroupSize),
+                    group = interaction(Model, GroupSize),
+                    color = Model)) + 
+  geom_line(size = 0.6) +
+  geom_point(size = 3.5) +
+  scale_linetype_manual(values = c("5" = "solid", "20" = "dotdash")) +
+  scale_color_manual(values = c('HBSTS'='orange', 
+                                #'HS-BSTS'='skyblue2', 
+                                #'SS-BSTS'='grey2')) +
+                                'BSTS'='grey2')) +
+  labs(x = 'Expected model size', 
+       y = 'RMSE', 
+       color = 'Model', 
+       linetype = 'Number of control groups') +
+  guides(color = guide_legend(order = 1, nrow = 1),
+         linetype = guide_legend(order = 2, nrow = 1)) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        axis.text.x = element_text(angle = 0, hjust = 1, size = 18),
+        legend.position = 'top',
+        legend.box = "vertical",          # stack legends vertically
+        legend.box.just = "center",       # center the legends
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        panel.grid.minor = element_blank(),
+        strip.text = element_text(size = 18, face = "bold"))
+
 
 
 ###############################################################
 ### robustness and effectiveness of detecting an effect #######
 ###############################################################
 
-## e.g. first experiement
-nomiss <- readRDS('simulated data/sim100_50t_5positive/sim100obs_positive.RData')
-mnar <-readRDS('simulated data/sim100_50t_5positive/sim100MCARobs_positive.RData')
-mcar <- readRDS('simulated data/sim100_50t_5positive/sim100MCARobs_positive.RData')
+## e.g. first experiment
+nomiss <- readRDS('simulated_data/simulation2 H20/smallsim100_20.RData')
 
 ### --- plot of probability of detecting an effect --- ###
-
+R <- dim(nomiss$pred.error)[1]
 k <- cbind(colSums(1-nomiss$spec),apply(nomiss$sen,3,colSums))
-n_k <- 200-k
+n_k <- R-k
 point.hbsts <- point.hsbsts <- point.ssbsts <- matrix(0,nrow = 2,ncol=8)
 for(i in 1:8){
   point.hbsts[,i] <- quantile(rbeta(10000,1+k[1,i],1+n_k[1,i]),c(0.025,0.975))
@@ -157,103 +285,41 @@ for(i in 1:8){
 }
 
 
-df.nomiss <- data.frame(mean = as.vector(t(k))/200,
+df.nomiss <- data.frame(mean = as.vector(t(k))/R,
                         lower = c(point.hbsts[1,],point.hsbsts[1,],point.ssbsts[1,]),
                         upper = c(point.hbsts[2,],point.hsbsts[2,],point.ssbsts[2,]),
-                        model = rep(c('HBSTS','HS-BSTS','SS-BSTS'),each=8),
-                        increment = rep(c(0,0.01,0.1,0.3,0.5,1,2,3),3))
-df.nomiss <- df.nomiss[df.nomiss$increment != 0.01,]
+                        Model = rep(c('HBSTS','HS-BSTS','BSTS'),each=8),
+                        increment = rep(c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5),3))
+#df.nomiss <- df.nomiss[df.nomiss$increment != 0.01,]
 
-ggplot(df.nomiss, aes(x=increment, y=mean,group=model,color=model)) + 
+ggplot(df.nomiss[df.nomiss$Model!= 'HS-BSTS',], aes(x=increment, y=mean,group=Model,color=Model)) + 
   geom_line(size=0.6) +
   geom_point(size=3.5)+
-  geom_errorbar(aes(ymin=lower, ymax=upper), width=.3,
-                position=position_dodge(0.05),size=0.6) + 
-  theme_bw() + theme(axis.title = element_text(size = 20),
-                     axis.text= element_text(size=20),
-                     legend.position='none',
-                     axis.text.x = element_text(angle = 60, hjust = 1,size=18),
-                     panel.grid.minor = element_blank())+
-  scale_color_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey2')) +
-  labs(x='effect size',y='proportion of intervals excluding 0') +
-  scale_x_continuous(breaks = c(0,0.1,0.3,0.5,1,2,3),
-                     labels = c(0,0.1,0.3,0.5,1,2,3)) + 
-  scale_y_continuous(breaks = c(0,0.2,0.4,0.6,0.8,1),
-                     labels = c(0,0.2,0.4,0.6,0.8,1),
-                     limits = c(0,1))
-
-
-k <- cbind(colSums(1-mcar$spec),apply(mcar$sen,3,colSums))
-n_k <- 200-k
-point.hbsts <- point.hsbsts <- point.ssbsts <- matrix(0,nrow = 2,ncol=8)
-for(i in 1:8){
-  point.hbsts[,i] <- quantile(rbeta(10000,1+k[1,i],1+n_k[1,i]),c(0.025,0.975))
-  point.hsbsts[,i] <- quantile(rbeta(10000,1+k[2,i],1+n_k[2,i]),c(0.025,0.975))
-  point.ssbsts[,i] <- quantile(rbeta(10000,1+k[3,i],1+n_k[3,i]),c(0.025,0.975))
-}
-df.mcar <- data.frame(mean = as.vector(t(k))/200,
-                      lower = c(point.hbsts[1,],point.hsbsts[1,],point.ssbsts[1,]),
-                      upper = c(point.hbsts[2,],point.hsbsts[2,],point.ssbsts[2,]),
-                      model = rep(c('HBSTS','HS-BSTS','SS-BSTS'),each=8),
-                      increment = rep(c(0,0.01,0.1,0.3,0.5,1,2,3),3))
-df.mcar <- df.mcar[df.mcar$increment != 0.01,]
-ggplot(df.mcar, aes(x=increment, y=mean,group=model,color=model)) + 
-  geom_line(size=0.6) +
-  geom_point(size=3.5)+
-  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
-                position=position_dodge(0.05),size=0.6) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.02,
+                position=position_dodge(0.01),size=0.6) + 
   theme_bw() + theme(axis.title = element_text(size = 18),
                      axis.text= element_text(size=18),
-                     legend.position='none',
+                     #legend.position='none',
+                     legend.position=c(0.8,0.2),
+                     legend.text = element_text(size=20),
+                     legend.title = element_text(size=20),
                      axis.text.x = element_text(angle = 60, hjust = 1,size=18),
                      panel.grid.minor = element_blank())+
-  scale_color_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey2')) +
-  labs(x='effect size',y='proportion of intervals excluding 0') +
-  scale_x_continuous(breaks = c(0,0.1,0.3,0.5,1,2,3),
-                     labels = c(0,0.1,0.3,0.5,1,2,3))+ 
+  scale_color_manual(values=c('HBSTS'='orange',
+                              #'HS-BSTS'='skyblue2',
+                              'BSTS'='grey2')) +
+  labs(x='Effect size',y='Proportion of intervals excluding 0') +
+  scale_x_continuous(breaks = c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5),#c(0,0.1,0.3,0.5,1,2,3),
+                     labels = c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5))+#c(0,0.1,0.3,0.5,1,2,3)) + 
   scale_y_continuous(breaks = c(0,0.2,0.4,0.6,0.8,1),
                      labels = c(0,0.2,0.4,0.6,0.8,1),
                      limits = c(0,1))
 
-
-k <- cbind(colSums(1-mnar$spec),apply(mnar$sen,3,colSums))
-n_k <- 200-k
-point.hbsts <- point.hsbsts <- point.ssbsts <- matrix(0,nrow = 2,ncol=8)
-for(i in 1:8){
-  point.hbsts[,i] <- quantile(rbeta(10000,1+k[1,i],1+n_k[1,i]),c(0.025,0.975))
-  point.hsbsts[,i] <- quantile(rbeta(10000,1+k[2,i],1+n_k[2,i]),c(0.025,0.975))
-  point.ssbsts[,i] <- quantile(rbeta(10000,1+k[3,i],1+n_k[3,i]),c(0.025,0.975))
-}
-
-df.mnar <- data.frame(mean = as.vector(t(k))/200,
-                      lower = c(point.hbsts[1,],point.hsbsts[1,],point.ssbsts[1,]),
-                      upper = c(point.hbsts[2,],point.hsbsts[2,],point.ssbsts[2,]),
-                      model = rep(c('HBSTS','HS-BSTS','SS-BSTS'),each=8),
-                      increment = rep(c(0,0.01,0.1,0.3,0.5,1,2,3),3))
-
-df.mnar <- df.mnar[df.mnar$increment !=0.01,]
-ggplot(df.mnar, aes(x=increment, y=mean,group=model,color=model)) + 
-  geom_line(size=0.6) +
-  geom_point(size=3.5)+
-  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
-                position=position_dodge(0.05),size=0.6) + 
-  theme_bw() + theme(axis.title = element_text(size = 18),
-                     axis.text= element_text(size=18),
-                     legend.position='none',
-                     axis.text.x = element_text(angle = 60, hjust = 1,size=18),
-                     panel.grid.minor = element_blank())+
-  scale_color_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey2')) +
-  labs(x='effect size',y='proportion of intervals excluding 0') +
-  scale_x_continuous(breaks = c(0,0.1,0.3,0.5,1,2,3),
-                     labels = c(0,0.1,0.3,0.5,1,2,3)) + 
-  scale_y_continuous(breaks = c(0,0.2,0.4,0.6,0.8,1),
-                     labels = c(0,0.2,0.4,0.6,0.8,1),
-                     limits = c(0,1))
 
 
 
 ### --- plot of APEE --- ###
-
+mcar <- readRDS('simulated_data/simulation2 H20/smallsim100mcar_20.RData')
 apee1 <- abs(mcar$avgeffectall[,1,1] -  mcar$realeffect[,1,1])/mcar$realeffect[,1,1]
 apee2 <- abs(mcar$avgeffectall[,2,1] -  mcar$realeffect[,1,1])/mcar$realeffect[,1,1]
 apee3 <- abs(mcar$avgeffectall[,3,1] -  mcar$realeffect[,1,1])/mcar$realeffect[,1,1]
@@ -287,8 +353,85 @@ ggplot(apee.whole,aes(x=increment,y=mean,group=model,color=model)) +
                      labels = c(0,0.1,0.3,0.5,1,2,3))+
   scale_color_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey2'))
 
+sigma001 <- readRDS('simulated_data/simulation2 H20/smallsim100_20.RData')
+sigma05 <-  readRDS('simulated_data/simulation2 H20/smallsim100mu05_20.RData')
+sigma1 <-  readRDS('simulated_data/simulation2 H20/smallsim100mu1_20.RData')
+sigma15 <-  readRDS('simulated_data/simulation2 H20/smallsim100mu15_20.RData')
+sigma2 <-  readRDS('simulated_data/simulation2 H20/smallsim100mu2_20.RData')
+apee.sigma <- data.frame(mean = c(apply(sigma001$apee,2,colMeans)[3,],
+                                  apply(sigma05$apee,2,colMeans)[3,],
+                                  apply(sigma1$apee,2,colMeans)[3,],
+                                  apply(sigma15$apee,2,colMeans)[3,],
+                                  apply(sigma2$apee,2,colMeans)[3,]),
+                         lower = c(apply(sigma001$apee,2,apply,2,quantile,0.025)[3,],
+                                   apply(sigma05$apee,2,apply,2,quantile,0.025)[3,],
+                                   apply(sigma1$apee,2,apply,2,quantile,0.025)[3,],
+                                   apply(sigma15$apee,2,apply,2,quantile,0.025)[3,],
+                                   apply(sigma2$apee,2,apply,2,quantile,0.025)[3,]),
+                         upper = c(apply(sigma001$apee,2,apply,2,quantile,0.975)[3,],
+                                   apply(sigma05$apee,2,apply,2,quantile,0.975)[3,],
+                                   apply(sigma1$apee,2,apply,2,quantile,0.975)[3,],
+                                   apply(sigma15$apee,2,apply,2,quantile,0.975)[3,],
+                                   apply(sigma2$apee,2,apply,2,quantile,0.975)[3,]),
+                         Model =  rep(c('HBSTS','HS-BSTS','BSTS'), 5),
+                         Sigma = rep(c(0.01,0.5,1,1.5,2),each=3))
+
+ggplot(apee.sigma[apee.sigma$Model!= 'HS-BSTS',],aes(x=Sigma,y=mean,group=Model,color=Model)) + 
+  geom_point(size=2,aes(color=Model)) + 
+  geom_errorbar(aes(ymin=lower,ymax=upper,color=Model),width=.1,
+                position=position_dodge(0.03),size=0.5)+
+  theme_bw() + theme(axis.title = element_text(size = 20),
+                     axis.text= element_text(size=16),
+                     legend.position=c(0.15,0.8),
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14),
+                     axis.text.x = element_text(angle = 0, hjust = 1),
+                     panel.grid.minor = element_blank(),
+                     strip.text = element_text(size = 12))+
+  #scale_color_manual(values=c('not missing'='orange','sigma001'='skyblue2','MNAR'='grey2')) +
+  labs(x=expression(sigma[mu]),y='Absolute percentage estimation error',) +
+  scale_x_continuous(breaks = c(0.01,0.5,1,1.5,2),
+                     labels = c(0.01,0.5,1,1.5,2))+
+  scale_color_manual(values=c('HBSTS'='orange',#'HS-BSTS'='skyblue2',
+                              'BSTS'='grey2'))
+
+t50 <-  readRDS('simulated_data/simulation2 H20/smallsim50_20.RData')
+t100 <-  readRDS('simulated_data/simulation2 H20/smallsim100_20.RData')
+t200 <-   readRDS('simulated_data/simulation2 H20/smallsim200_20.RData')
+
+apee.t <- data.frame(mean = c(apply(t50$apee,2,colMeans)[1,],
+                              apply(t100$apee,2,colMeans)[1,],
+                              apply(t200$apee,2,colMeans)[1,]),
+                     lower = c(apply(t50$apee,2,apply,2,quantile,0.025)[1,],
+                               apply(t100$apee,2,apply,2,quantile,0.025)[1,],
+                               apply(t200$apee,2,apply,2,quantile,0.025)[1,]),
+                     upper = c(apply(t50$apee,2,apply,2,quantile,0.975)[1,],
+                               apply(t100$apee,2,apply,2,quantile,0.975)[1,],
+                               apply(t200$apee,2,apply,2,quantile,0.975)[1,]),
+                     Model =  rep(c('HBSTS','HS-BSTS','BSTS'), 3),
+                     Time = rep(c(50,100,200),each=3))
 
 
+ggplot(apee.t[apee.t$Model!='HS-BSTS',],aes(x=Time,y=mean,group=Model,color=Model)) + 
+  geom_point(size=2,aes(color=Model)) + 
+  geom_errorbar(aes(ymin=lower,ymax=upper,color=Model),width=10,
+                position=position_dodge(3),size=0.5)+
+  theme_bw() + theme(axis.title = element_text(size = 20),
+                     axis.text= element_text(size=16),
+                     legend.position=c(0.6,0.9),
+                     legend.direction = "horizontal",
+                     legend.text = element_text(size = 14),
+                     legend.title = element_text(size = 14),
+                     axis.text.x = element_text(angle = 0, hjust = 1),
+                     panel.grid.minor = element_blank(),
+                     strip.text = element_text(size = 12))+
+  #scale_color_manual(values=c('not missing'='orange','sigma001'='skyblue2','MNAR'='grey2')) +
+  labs(x='Length of study',y='Absolute percentage estimation error',) +
+  scale_x_continuous(breaks = c(50,100,200),
+                     labels = c(50,100,200))+
+  scale_color_manual(values=c('HBSTS'='orange',#'HS-BSTS'='skyblue2',
+                              'BSTS'='grey2'))+
+  guides(color = guide_legend(nrow = 1)) 
 
 ###########################################
 ## when having larger random errors: ######
@@ -296,124 +439,24 @@ ggplot(apee.whole,aes(x=increment,y=mean,group=model,color=model)) +
 
 color_palette <- brewer.pal(10,'Set3')
 vid_color <- viridis(10,option='turbo')
-mcar1 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_new.RData')
-mcar2 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err02_new.RData')
-mcar3 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err03_new.RData')
-mcar4 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err04_new.RData')
-mcar5 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err05_new.RData')
-mcar6 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err06_new.RData')
-mcar7 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err07_new.RData')
-mcar8 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err08_new.RData')
-mcar9 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err09_new.RData')
-mcar10 <- readRDS('simulated data/sim200_moreerror/sim200MCARobs_err1_new.RData')
+#[,1,3]: hbsts;[,2,3]: hsbsts;[,3,3]: bsts
+len <- c(length(sigma001$avgeffectall.ci.upper[,2,3]),
+         length(sigma05$avgeffectall.ci.upper[,2,3]),
+         length(sigma1$avgeffectall.ci.upper[,2,3]),
+         length(sigma15$avgeffectall.ci.upper[,2,3]),
+         length(sigma2$avgeffectall.ci.upper[,2,3]))
+         
+         
+ciplot <- data.frame(error = rep(c(0.01,0.5,1,1.5,2),len),
+                     width = c(sigma001$avgeffectall.ci.upper[,3,3]-sigma001$avgeffectall.ci.lower[,3,3],
+                               sigma05$avgeffectall.ci.upper[,3,3]-sigma05$avgeffectall.ci.lower[,3,3],
+                               sigma1$avgeffectall.ci.upper[,3,3]-sigma1$avgeffectall.ci.lower[,3,3],
+                               sigma15$avgeffectall.ci.upper[,3,3]-sigma15$avgeffectall.ci.lower[,3,3],
+                               sigma2$avgeffectall.ci.upper[,3,3]-sigma2$avgeffectall.ci.lower[,3,3]))
 
+ciplot$error <- as.factor(ciplot$error)
 
-## -- APEE -- e.g. when effect size = 3##
-apee1 <-abs(mcar1$avgeffectall[,1,7] -  mcar1$realeffect[,1,7])/mcar1$realeffect[,1,7]
-apee2 <-abs(mcar2$avgeffectall[,1,7] -  mcar2$realeffect[,1,7])/mcar2$realeffect[,1,7]
-apee3 <- abs(mcar3$avgeffectall[,1,7] -  mcar3$realeffect[,1,7])/mcar3$realeffect[,1,7]
-apee4 <- abs(mcar4$avgeffectall[,1,7] -  mcar4$realeffect[,1,7])/mcar4$realeffect[,1,7]
-apee5 <- abs(mcar5$avgeffectall[,1,7] -  mcar5$realeffect[,1,7])/mcar5$realeffect[,1,7]
-apee6 <- abs(mcar6$avgeffectall[,1,7] -  mcar6$realeffect[,1,7])/mcar6$realeffect[,1,7]
-apee7 <- abs(mcar7$avgeffectall[,1,7] -  mcar7$realeffect[,1,7])/mcar7$realeffect[,1,7]
-apee8 <- abs(mcar8$avgeffectall[,1,7] -  mcar8$realeffect[,1,7])/mcar8$realeffect[,1,7]
-apee9 <- abs(mcar9$avgeffectall[,1,7] -  mcar9$realeffect[,1,7])/mcar9$realeffect[,1,7]
-apee10 <- abs(mcar10$avgeffectall[,1,7] -  mcar10$realeffect[,1,7])/mcar10$realeffect[,1,7]
-
-apee1hs <-abs(mcar1$avgeffectall[,2,7] -  mcar1$realeffect[,1,7])/mcar1$realeffect[,1,7]
-apee2hs <-abs(mcar2$avgeffectall[,2,7] -  mcar2$realeffect[,1,7])/mcar2$realeffect[,1,7]
-apee3hs <- abs(mcar3$avgeffectall[,2,7] -  mcar3$realeffect[,1,7])/mcar3$realeffect[,1,7]
-apee4hs <- abs(mcar4$avgeffectall[,2,7] -  mcar4$realeffect[,1,7])/mcar4$realeffect[,1,7]
-apee5hs <- abs(mcar5$avgeffectall[,2,7] -  mcar5$realeffect[,1,7])/mcar5$realeffect[,1,7]
-apee6hs <- abs(mcar6$avgeffectall[,2,7] -  mcar6$realeffect[,1,7])/mcar6$realeffect[,1,7]
-apee7hs <- abs(mcar7$avgeffectall[,2,7] -  mcar7$realeffect[,1,7])/mcar7$realeffect[,1,7]
-apee8hs <- abs(mcar8$avgeffectall[,2,7] -  mcar8$realeffect[,1,7])/mcar8$realeffect[,1,7]
-apee9hs <- abs(mcar9$avgeffectall[,2,7] -  mcar9$realeffect[,1,7])/mcar9$realeffect[,1,7]
-apee10hs <- abs(mcar10$avgeffectall[,2,7] -  mcar10$realeffect[,1,7])/mcar10$realeffect[,1,7]
-
-apee1ss <-abs(mcar1$avgeffectall[,3,7] -  mcar1$realeffect[,1,7])/mcar1$realeffect[,1,7]
-apee2ss <-abs(mcar2$avgeffectall[,3,7] -  mcar2$realeffect[,1,7])/mcar2$realeffect[,1,7]
-apee3ss <- abs(mcar3$avgeffectall[,3,7] -  mcar3$realeffect[,1,7])/mcar3$realeffect[,1,7]
-apee4ss <- abs(mcar4$avgeffectall[,3,7] -  mcar4$realeffect[,1,7])/mcar4$realeffect[,1,7]
-apee5ss <- abs(mcar5$avgeffectall[,3,7] -  mcar5$realeffect[,1,7])/mcar5$realeffect[,1,7]
-apee6ss <- abs(mcar6$avgeffectall[,3,7] -  mcar6$realeffect[,1,7])/mcar6$realeffect[,1,7]
-apee7ss <- abs(mcar7$avgeffectall[,3,7] -  mcar7$realeffect[,1,7])/mcar7$realeffect[,1,7]
-apee8ss <- abs(mcar8$avgeffectall[,3,7] -  mcar8$realeffect[,1,7])/mcar8$realeffect[,1,7]
-apee9ss <- abs(mcar9$avgeffectall[,3,7] -  mcar9$realeffect[,1,7])/mcar9$realeffect[,1,7]
-apee10ss <- abs(mcar10$avgeffectall[,3,7] -  mcar10$realeffect[,1,7])/mcar10$realeffect[,1,7]
-
-
-apeedf <- data.frame(apee.mean = c(mean(apee1),mean(apee2),mean(apee3),mean(apee4),mean(apee5),
-                                   mean(apee6),mean(apee7),mean(apee8),mean(apee9),mean(apee10),
-                                   mean(apee1hs),mean(apee2hs),mean(apee3hs),mean(apee4hs),mean(apee5hs),
-                                   mean(apee6hs),mean(apee7hs),mean(apee8hs),mean(apee9hs),mean(apee10hs),
-                                   mean(apee1ss),mean(apee2ss),mean(apee3ss),mean(apee4ss),mean(apee5ss),
-                                   mean(apee6ss),mean(apee7ss),mean(apee8ss),mean(apee9ss),mean(apee10ss)),
-                     apee.upper = c(quantile(apee1,0.975),quantile(apee2,0.975),quantile(apee3,0.975),
-                                    quantile(apee4,0.975),quantile(apee5,0.975),quantile(apee6,0.975),
-                                    quantile(apee7,0.975),quantile(apee8,0.975),quantile(apee9,0.975),
-                                    quantile(apee10,0.975),
-                                    quantile(apee1hs,0.975),quantile(apee2hs,0.975),quantile(apee3hs,0.975),
-                                    quantile(apee4hs,0.975),quantile(apee5hs,0.975),quantile(apee6hs,0.975),
-                                    quantile(apee7hs,0.975),quantile(apee8hs,0.975),quantile(apee9hs,0.975),
-                                    quantile(apee10hs,0.975),
-                                    quantile(apee1ss,0.975),quantile(apee2ss,0.975),quantile(apee3ss,0.975),
-                                    quantile(apee4ss,0.975),quantile(apee5ss,0.975),quantile(apee6ss,0.975),
-                                    quantile(apee7ss,0.975),quantile(apee8ss,0.975),quantile(apee9ss,0.975),
-                                    quantile(apee10ss,0.975)),
-                     apee.lower =c(quantile(apee1,0.025),quantile(apee2,0.025),quantile(apee3,0.025),
-                                   quantile(apee4,0.025),quantile(apee5,0.025),quantile(apee6,0.025),
-                                   quantile(apee7,0.025),quantile(apee8,0.025),quantile(apee9,0.025),
-                                   quantile(apee10,0.025),
-                                   quantile(apee1hs,0.025),quantile(apee2hs,0.025),quantile(apee3hs,0.025),
-                                   quantile(apee4hs,0.025),quantile(apee5hs,0.025),quantile(apee6hs,0.025),
-                                   quantile(apee7hs,0.025),quantile(apee8hs,0.025),quantile(apee9hs,0.025),
-                                   quantile(apee10hs,0.025),
-                                   quantile(apee1ss,0.025),quantile(apee2ss,0.025),quantile(apee3ss,0.025),
-                                   quantile(apee4ss,0.025),quantile(apee5ss,0.025),quantile(apee6ss,0.025),
-                                   quantile(apee7ss,0.025),quantile(apee8ss,0.025),quantile(apee9ss,0.025),
-                                   quantile(apee10ss,0.025)),
-                     error = rep(seq(0.1,1,by=0.1),3),
-                     model = rep(c('HBSTS','HS-BSTS','SS-BSTS'),each=10))
-
-ggplot(apeedf,aes(x=error,y=apee.mean,group=model,color=model)) + 
-  geom_point(size=2,aes(color=model)) + 
-  geom_errorbar(aes(ymin=apee.lower,ymax=apee.upper),width=.02,
-                position=position_dodge(0.02),size=0.5)+
-  theme_bw() + theme(axis.title = element_text(size = 20),
-                     axis.text= element_text(size=16),
-                     legend.position=c(0.1,0.85),
-                     legend.text= element_text(size=12),
-                     legend.title = element_text(size=14),
-                     axis.text.x = element_text(angle = 55, hjust = 1),
-                     panel.grid.minor = element_blank(),
-                     strip.text = element_text(size = 12))+
-  #scale_color_manual(values=c('not missing'='orange','MCAR'='skyblue2','MNAR'='grey2')) +
-  labs(x=expression(sigma[mu]),y='absolute percentage estimation error') +
-  scale_x_continuous(breaks = seq(0.1,1,by=0.1),
-                     labels = seq(0.1,1,by=0.1))+
-  scale_y_continuous(breaks = seq(0.1,1,by=0.1),
-                     labels = seq(0.1,1,by=0.1),
-                     limits = c(0,1))+
-  scale_color_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey2'))
-
-
-## -- C.I. -- ##
-mcarci <- data.frame(error = rep(seq(0.1,1,0.1),each=400),
-                     width = c(mcar1$avgeffectall.ci.upper[,1,2]-mcar1$avgeffectall.ci.lower[,1,2],
-                               mcar2$avgeffectall.ci.upper[,1,2]-mcar2$avgeffectall.ci.lower[,1,2],
-                               mcar3$avgeffectall.ci.upper[,1,2]-mcar3$avgeffectall.ci.lower[,1,2],
-                               mcar4$avgeffectall.ci.upper[,1,2]-mcar4$avgeffectall.ci.lower[,1,2],
-                               mcar5$avgeffectall.ci.upper[,1,2]-mcar5$avgeffectall.ci.lower[,1,2],
-                               mcar6$avgeffectall.ci.upper[,1,2]-mcar6$avgeffectall.ci.lower[,1,2],
-                               mcar7$avgeffectall.ci.upper[,1,2]-mcar7$avgeffectall.ci.lower[,1,2],
-                               mcar8$avgeffectall.ci.upper[,1,2]-mcar8$avgeffectall.ci.lower[,1,2],
-                               mcar9$avgeffectall.ci.upper[,1,2]-mcar9$avgeffectall.ci.lower[,1,2],
-                               mcar10$avgeffectall.ci.upper[,1,2]-mcar10$avgeffectall.ci.lower[,1,2]))
-
-mcarci$error <- as.factor(mcarci$error)
-
-ggplot(mcarci,aes(x=width,fill = error,color=error)) + 
+ggplot(ciplot,aes(x=width,fill = error,color=error)) + 
   geom_density(alpha=0.2,size=1) + 
   theme_minimal() + 
   labs(title = '',x = 'C.I. width',y= 'density') + 
@@ -425,83 +468,7 @@ ggplot(mcarci,aes(x=width,fill = error,color=error)) +
         axis.text.y = element_text(size=14),
         legend.text = element_text(size=14),
         legend.title = element_text(size=14),
-        legend.position = c(0.85,0.7)) + 
-  scale_x_continuous(breaks = seq(0,18,3),
-                     labels = seq(0,18,3))+
-  scale_y_continuous(breaks = seq(0,6,1),
-                     labels = seq(0,6,1),limits = c(0,6))
-
-
-
-## -- SD --##
-plot(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,1,1]),
-                          sd(mcar2$avgeffectall[,1,2]),
-                          sd(mcar3$avgeffectall[,1,2]),
-                          sd(mcar4$avgeffectall[,1,2]),
-                          sd(mcar5$avgeffectall[,1,2]),
-                          sd(mcar6$avgeffectall[,1,2]),
-                          sd(mcar7$avgeffectall[,1,2]),
-                          sd(mcar8$avgeffectall[,1,2]),
-                          sd(mcar9$avgeffectall[,1,2]),
-                          sd(mcar10$avgeffectall[,1,2])),type='l',
-     xlab=expression(sigma[mu]),ylab='sd of estimated average treatment effect',
-     ylim=c(0.2,10),cex.lab=1.5,cex.axis = 1.5,lwd=2,col='orange')
-
-lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,2,2]),
-                           sd(mcar2$avgeffectall[,2,2]),
-                           sd(mcar3$avgeffectall[,2,2]),
-                           sd(mcar4$avgeffectall[,2,2]),
-                           sd(mcar5$avgeffectall[,2,2]),
-                           sd(mcar6$avgeffectall[,2,2]),
-                           sd(mcar7$avgeffectall[,2,2]),
-                           sd(mcar8$avgeffectall[,2,2]),
-                           sd(mcar9$avgeffectall[,2,2]),
-                           sd(mcar10$avgeffectall[,2,2])),col='skyblue',lwd=4)
-lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,3,2]),
-                           sd(mcar2$avgeffectall[,3,2]),
-                           sd(mcar3$avgeffectall[,3,2]),
-                           sd(mcar4$avgeffectall[,3,2]),
-                           sd(mcar5$avgeffectall[,3,2]),
-                           sd(mcar6$avgeffectall[,3,2]),
-                           sd(mcar7$avgeffectall[,3,2]),
-                           sd(mcar8$avgeffectall[,3,2]),
-                           sd(mcar9$avgeffectall[,3,2]),
-                           sd(mcar10$avgeffectall[,3,2])),col=1,lwd=2)
-
-
-lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,1,7]),
-                           sd(mcar2$avgeffectall[,1,7]),
-                           sd(mcar3$avgeffectall[,1,7]),
-                           sd(mcar4$avgeffectall[,1,7]),
-                           sd(mcar5$avgeffectall[,1,7]),
-                           sd(mcar6$avgeffectall[,1,7]),
-                           sd(mcar7$avgeffectall[,1,7]),
-                           sd(mcar8$avgeffectall[,1,7]),
-                           sd(mcar9$avgeffectall[,1,7]),
-                           sd(mcar10$avgeffectall[,1,7])),col='orange',lwd=2)
-lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,2,7]),
-                           sd(mcar2$avgeffectall[,2,7]),
-                           sd(mcar3$avgeffectall[,2,7]),
-                           sd(mcar4$avgeffectall[,2,7]),
-                           sd(mcar5$avgeffectall[,2,7]),
-                           sd(mcar6$avgeffectall[,2,7]),
-                           sd(mcar7$avgeffectall[,2,7]),
-                           sd(mcar8$avgeffectall[,2,7]),
-                           sd(mcar9$avgeffectall[,2,7]),
-                           sd(mcar10$avgeffectall[,2,7])),col='skyblue',lwd=4)
-lines(x=seq(0.1,1,0.1),y=c(sd(mcar1$avgeffectall[,3,7]),
-                           sd(mcar2$avgeffectall[,3,7]),
-                           sd(mcar3$avgeffectall[,3,7]),
-                           sd(mcar4$avgeffectall[,3,7]),
-                           sd(mcar5$avgeffectall[,3,7]),
-                           sd(mcar6$avgeffectall[,3,7]),
-                           sd(mcar7$avgeffectall[,3,7]),
-                           sd(mcar8$avgeffectall[,3,7]),
-                           sd(mcar9$avgeffectall[,3,7]),
-                           sd(mcar10$avgeffectall[,3,7])),col=1,lwd=2)
-text(0.7,1,'effect size=0.1',cex=1.4, pos=3)
-text(0.7,6,'effect size=3',cex=1.4, pos=3)
-legend(0.1,10,legend=c('HBSTS','HS-BSTS','SS-BSTS'),col=c('orange','skyblue','black'),lty=c(1,1,1),lwd=c(2,3,2))
+        legend.position = c(0.85,0.7)) 
 
 
 
@@ -512,13 +479,6 @@ legend(0.1,10,legend=c('HBSTS','HS-BSTS','SS-BSTS'),col=c('orange','skyblue','bl
 
 
 
-
-
-
-
-
-
-##
 
 
 
