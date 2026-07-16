@@ -68,6 +68,7 @@ parameters {
   real<lower=0> sigma2_gamma; // random effects from strata sampling
   vector[NC] eps_c;
   real<lower=0> sigma2_cluster; // random effects from cluster sampling
+  real<lower=0> sigma_global;
 }
 
 transformed parameters {
