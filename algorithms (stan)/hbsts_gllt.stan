@@ -193,7 +193,7 @@ generated quantities {
   real ys[index_obs_forecast[T_forecast+1]-1];
   for(i in 1:T_forecast){
     for(j in index_obs_forecast[i]:(index_obs_forecast[i+1]-1)){
-      ys[j] = normal_rng(y_forecast_unscale[i],sigma_obs);
+      ys[j] = normal_rng(alpha_forecast_unscale[i],sigma_obs);
       
     }
   }
