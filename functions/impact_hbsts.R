@@ -1,7 +1,35 @@
-stan_mod_hbstsLL <- stan_model(file='algorithm (stan)/hbsts_ll.stan',verbose=T)
-stan_mod_hbstsAR <- stan_model(file='algorithm (stan)/hbsts_ar.stan',verbose=T)
-stan_mod_hbstsLLT <- stan_model(file='algorithm (stan)/hbsts_llt.stan',verbose=T)
-stan_mod_hbstsGLLT <- stan_model(file='algorithm (stan)/hbsts_gllt.stan',verbose=T)
+#stan_mod_hbstsLL <- stan_model(file='algorithms (stan)/hbsts_ll.stan',verbose=T)
+#stan_mod_hbstsAR <- stan_model(file='algorithms (stan)/hbsts_ar.stan',verbose=T)
+#stan_mod_hbstsLLT <- stan_model(file='algorithms (stan)/hbsts_llt.stan',verbose=T)
+#stan_mod_hbstsGLLT <- stan_model(file='algorithms (stan)/hbsts_gllt.stan',verbose=T)
+
+
+stan_base <- "https://raw.githubusercontent.com/xwyu2021/Hierarchical-Bayesian-Structural-Time-Series-model/main/algorithms%20%28stan%29/"
+
+
+
+compile_stan_github <- function(filename) {
+  raw_url <- paste0(stan_base, filename)
+
+  con <- base::url(raw_url, open = "rb")
+  on.exit(close(con))
+
+  stan_code <- paste(
+    readLines(con, warn = FALSE),
+    collapse = "\n"
+  )
+
+  rstan::stan_model(
+    model_code = stan_code,
+    model_name = tools::file_path_sans_ext(filename),
+    verbose = TRUE
+  )
+}
+
+stan_mod_hbstsLL <- compile_stan_github("hbsts_ll.stan")
+stan_mod_hbstsAR <- compile_stan_github("hbsts_ar.stan")
+stan_mod_hbstsLLT <- compile_stan_github("hbsts_llt.stan")
+stan_mod_hbstsGLLT <- compile_stan_github("hbsts_gllt.stan")
 
 run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                       pre.obs=pre.obs.qua,
@@ -204,11 +232,16 @@ run_hbsts <- function(pre.time=pre.time.qua,post.time=post.time.qua,
 
 
 ## -- ADDING RANDOM EFFECT -- ##
-stan_mod_hbstsLL_re <- stan_model(file='algorithm (stan)/hbsts_ll_re.stan',verbose=T)
-stan_mod_hbstsAR_re <- stan_model(file='algorithm (stan)/hbsts_ar_re.stan',verbose=T)
-stan_mod_hbstsLLT_re <- stan_model(file='algorithm (stan)/hbsts_llt_re.stan',verbose=T)
-stan_mod_hbstsGLLT_re <- stan_model(file='algorithm (stan)/hbsts_gllt_re.stan',verbose=T)
+#stan_mod_hbstsLL_re <- stan_model(file='algorithms (stan)/hbsts_ll_re.stan',verbose=T)
+#stan_mod_hbstsAR_re <- stan_model(file='algorithms (stan)/hbsts_ar_re.stan',verbose=T)
+#stan_mod_hbstsLLT_re <- stan_model(file='algorithms (stan)/hbsts_llt_re.stan',verbose=T)
+#stan_mod_hbstsGLLT_re <- stan_model(file='algorithms (stan)/hbsts_gllt_re.stan',verbose=T)
 
+stan_mod_hbstsLL_re <- compile_stan_github("hbsts_ll_re.stan")
+stan_mod_hbstsAR_re <- compile_stan_github("hbsts_ar_re.stan")
+stan_mod_hbstsLLT_re <- compile_stan_github("hbsts_llt_re.stan")
+stan_mod_hbstsGLLT_re <- compile_stan_github("hbsts_gllt_re.stan")
+                             
 run_hbsts_re <- function(pre.time=pre.time.qua,post.time=post.time.qua,
                       pre.obs=pre.obs.qua,
                       pre.ys=pre.ys.qua,dimx=14,
