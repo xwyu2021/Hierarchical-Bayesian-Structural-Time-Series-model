@@ -1,8 +1,44 @@
-stan_mod_ll <- stan_model(file='algorithms (stan)/bstshsSAVS_img_ll.stan',verbose=T)
-stan_mod_ar <- stan_model(file='algorithms (stan)/bstshsSAVS_img.stan',verbose=T)
-stan_mod_llt <- stan_model(file='algorithms (stan)/bstshsSAVS_img_llt.stan',verbose=T)
-stan_mod_gllt <- stan_model(file='algorithms (stan)/bstshsSAVS_img_gllt.stan',verbose=T)
+#stan_mod_ll <- stan_model(file='algorithms (stan)/bstshsSAVS_img_ll.stan',verbose=T)
+#stan_mod_ar <- stan_model(file='algorithms (stan)/bstshsSAVS_img.stan',verbose=T)
+#stan_mod_llt <- stan_model(file='algorithms (stan)/bstshsSAVS_img_llt.stan',verbose=T)
+#stan_mod_gllt <- stan_model(file='algorithms (stan)/bstshsSAVS_img_gllt.stan',verbose=T)
 
+stan_base <- "https://raw.githubusercontent.com/xwyu2021/Hierarchical-Bayesian-Structural-Time-Series-model/main/algorithms%20%28stan%29/"
+
+
+read_stan_code <- function(filename) {
+  con <- url(paste0(stan_base, filename))
+  on.exit(close(con))
+
+  paste(
+    readLines(con, warn = FALSE),
+    collapse = "\n"
+  )
+}
+
+stan_mod_ll <- rstan::stan_model(
+  model_code = read_stan_code("bstshsSAVS_img_ll.stan"),
+  model_name = "bstshsSAVS_img_ll",
+  verbose = TRUE
+)
+
+stan_mod_ar <- rstan::stan_model(
+  model_code = read_stan_code("bstshsSAVS_img.stan"),
+  model_name = "bstshsSAVS_img_ar",
+  verbose = TRUE
+)
+
+stan_mod_llt <- rstan::stan_model(
+  model_code = read_stan_code("bstshsSAVS_img_llt.stan"),
+  model_name = "bstshsSAVS_img_llt",
+  verbose = TRUE
+)
+
+stan_mod_gllt <- rstan::stan_model(
+  model_code = read_stan_code("bstshsSAVS_img_gllt.stan"),
+  model_name = "bstshsSAVS_img_gllt",
+  verbose = TRUE
+)
 run_stanbsts <- function(pre.period,post.period,data=bsts.zoo.qua,modelsize,trend,
                          nchain=1,niter=5000,alpha=0.05,cycles,adapt=0.8,burn=3000,random=FALSE,realy=rep(0,50)){
   pre.time <- pre.period[2] - pre.period[1] + 1
