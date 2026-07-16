@@ -56,6 +56,7 @@ parameters {
   real<lower=-1,upper=1> kappa[M];
   real<lower=0> sigma2_xx;//[M];
   //real<lower=0> sigma2_alpha;
+  real<lower=0> sigma_global;
 }
 
 transformed parameters {
