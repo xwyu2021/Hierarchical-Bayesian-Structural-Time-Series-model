@@ -234,8 +234,10 @@ df.pred <- data.frame(error = c(colMeans(e1$pred.error),
                                    'BSTS'),25),
                       size = rep(c(1:5,1:20),each=3),
                       GroupSize = c(rep(5,15),rep(20,60)))
-df.pred$error  <- df.pred$error * 200
-ggplot(df.pred[df.pred$Model != 'HS-BSTS',], aes(x = size, y = error,
+#df.pred$error  <- df.pred$error * 200
+df.pred$Model[df.pred$Model == 'BSTS'] <- 'SS-BSTS'
+ggplot(df.pred,#[df.pred$Model != 'HS-BSTS',], 
+       aes(x = size, y = error,
                     linetype = factor(GroupSize),
                     group = interaction(Model, GroupSize),
                     color = Model)) + 
@@ -244,8 +246,8 @@ ggplot(df.pred[df.pred$Model != 'HS-BSTS',], aes(x = size, y = error,
   scale_linetype_manual(values = c("5" = "solid", "20" = "dotdash")) +
   scale_color_manual(values = c('HBSTS'='orange', 
                                 #'HS-BSTS'='skyblue2', 
-                                #'SS-BSTS'='grey2')) +
-                                'BSTS'='grey2')) +
+                                'SS-BSTS'='grey2')) +
+                                #'BSTS'='grey2')) +
   labs(x = 'Expected model size', 
        y = 'RMSE', 
        color = 'Model', 
@@ -272,6 +274,7 @@ ggplot(df.pred[df.pred$Model != 'HS-BSTS',], aes(x = size, y = error,
 
 ## e.g. first experiment
 nomiss <- readRDS('simulated_data/simulation2 H20/smallsim100_20.RData')
+
 
 ### --- plot of probability of detecting an effect --- ###
 R <- dim(nomiss$pred.error)[1]
@@ -306,8 +309,8 @@ ggplot(df.nomiss[df.nomiss$Model!= 'HS-BSTS',], aes(x=increment, y=mean,group=Mo
                      axis.text.x = element_text(angle = 60, hjust = 1,size=18),
                      panel.grid.minor = element_blank())+
   scale_color_manual(values=c('HBSTS'='orange',
-                              #'HS-BSTS'='skyblue2',
-                              'BSTS'='grey2')) +
+                              'HS-BSTS'='skyblue2',
+                              'BSTS'='grey2')) +#,'C-Arima'='darkolivegreen3')) +
   labs(x='Effect size',y='Proportion of intervals excluding 0') +
   scale_x_continuous(breaks = c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5),#c(0,0.1,0.3,0.5,1,2,3),
                      labels = c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5))+#c(0,0.1,0.3,0.5,1,2,3)) + 
@@ -316,7 +319,28 @@ ggplot(df.nomiss[df.nomiss$Model!= 'HS-BSTS',], aes(x=increment, y=mean,group=Mo
                      limits = c(0,1))
 
 
+##---- [reviewer requested adding c-arima results] -----
+# spec/specavg same results
+ca_20_100 <- readRDS(simulated_data/simulation2 H20/ca_20_100.RData)
+nomiss$specavg <- cbind(nomiss$specavg,ca_20_100$specavg)
+nomiss$senavg <- abind(nomiss$senavg,ca_20_100$senavg,along=2)
+k.arima <- c(sum(1-ca_20_100_miss2$specavg),apply(ca_20_100_miss2$senavg,2,sum))
+n_k.arima <- dim(ca_20_100_miss2$senavg)[1] - k.arima
+point.arima <- point.hbsts <- point.hsbsts <- point.ssbsts <- matrix(0,nrow = 2,ncol=8)
+for(i in 1:8){
+  point.hbsts[,i] <- quantile(rbeta(10000,1+k[1,i],1+n_k[1,i]),c(0.025,0.975))
+  point.hsbsts[,i] <- quantile(rbeta(10000,1+k[2,i],1+n_k[2,i]),c(0.025,0.975))
+  point.ssbsts[,i] <- quantile(rbeta(10000,1+k[3,i],1+n_k[3,i]),c(0.025,0.975))
+  #point.arima[,i] <- quantile(rbeta(10000,1+k[4,i],1+n_k[4,i]),c(0.025,0.975))
+  point.arima[,i] <- quantile(rbeta(10000,1+k.arima[i],1+n_k.arima[i]),c(0.025,0.975))
+}
 
+
+df.nomiss <- data.frame(mean = c(as.vector(t(k))/dim(nomiss$specavg)[1]),k.arima/dim(ca_20_100_miss2$senavg)[1]),
+                        lower = c(point.hbsts[1,],point.hsbsts[1,],point.ssbsts[1,]),point.arima[1,]),
+                        upper = c(point.hbsts[2,],point.hsbsts[2,],point.ssbsts[2,]),point.arima[2,]),
+                        Model = rep(c('HBSTS','HS-BSTS','SS-BSTS','C-Arima'),each=8),
+                        increment = rep(c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5),4))
 
 ### --- plot of APEE --- ###
 mcar <- readRDS('simulated_data/simulation2 H20/smallsim100mcar_20.RData')
@@ -478,9 +502,299 @@ ggplot(ciplot,aes(x=width,fill = error,color=error)) +
 
 
 
+# --------------------------------------
+# ----- bias plot ----------------
+# --------------------------------
 
+df.gen <- function(d){
+  nsim <- length(d$effect[,1])
+  bias <- data.frame(hbsts = c(d$effect[,1],as.vector(d$avgeffectall[,1,] - d$realeffect[,1,])),
+                     hsbsts = c(d$effect[,2],as.vector(d$avgeffectall[,2,] - d$realeffect[,1,])),
+                     ssbsts = c(d$effect[,3],as.vector(d$avgeffectall[,3,] - d$realeffect[,1,])),
+                     effect = rep(c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5),each=nsim))
+  
+  bias_long <- bias %>%
+    pivot_longer(
+      cols = c(hbsts, hsbsts, ssbsts),
+      names_to = "model",
+      values_to = "bias"
+    ) %>%
+    mutate(effect = factor(effect, levels = c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.3, 0.5)),
+           model = recode(
+             model,
+             hbsts  = "HBSTS",
+             hsbsts = "HS-BSTS",
+             ssbsts = "SS-BSTS"
+           ))
+  return(bias_long)
+}
 
+df.cut.gen <- function(d){
+  nsim <- length(d$effect[,1])
+  bias <- data.frame(hbsts = c(d$effect[,1],as.vector(d$avgeffectall[,1,] - d$realeffect[,1,])),
+                     hsbsts = c(d$effect[,2],as.vector(d$avgeffectall[,2,] - d$realeffect[,1,])),
+                     ssbsts = c(d$effect[,3],as.vector(d$avgeffectall[,3,] - d$realeffect[,1,])),
+                     effect = rep(c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5),each=nsim))
+  effect <- c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5)
+  ef1 <- ef2 <- ef3 <- c()
+  hbsts <- c()
+  hsbsts <- c()
+  ssbsts <- c()
+
+  for(i in 1:8){
+    if(i == 1){
+      len <- (d$effect.ci[,1,1] <= 0) & (d$effect.ci[,1,2] >=0)
+      hbsts <- c(hbsts,d$effect[len,1])
+      ef1 <- c(ef1,rep(effect[1],sum(len)))
+      len <- (d$effect.ci[,2,1] <= 0) & (d$effect.ci[,2,2] >=0)
+      hsbsts <- c(hsbsts,d$effect[len,2])
+      ef2 <- c(ef2,rep(effect[1],sum(len)))
+      len <- (d$effect.ci[,3,1] <= 0) & (d$effect.ci[,3,2] >=0)
+      ssbsts <- c(ssbsts,d$effect[len,2])
+      ef3 <- c(ef3,rep(effect[1],sum(len)))
+    }else{
+      len <- (d$avgeffectall.ci.lower[,1,i-1] > 0 | d$avgeffectall.ci.upper[,1,i-1] <=0)
+      hbsts <- c(hbsts,d$avgeffectall[len,1,i-1] - d$realeffect[len,1,i-1])
+      ef1 <- c(ef1,rep(effect[i-1],sum(len)))
+      
+      len <- (d$avgeffectall.ci.lower[,2,i-1] > 0 | d$avgeffectall.ci.upper[,2,i-1] <=0)
+      hsbsts <- c(hsbsts,d$avgeffectall[len,2,i-1] - d$realeffect[len,1,i-1])
+      ef2 <- c(ef2,rep(effect[i-1],sum(len)))
+      
+      len <- (d$avgeffectall.ci.lower[,3,i-1] > 0 | d$avgeffectall.ci.upper[,3,i-1] <=0)
+      ssbsts <- c(ssbsts,d$avgeffectall[len,3,i-1] - d$realeffect[len,1,i-1])
+      ef3 <- c(ef3,rep(effect[i-1],sum(len)))
+    }
+  }
+  bias_long <- data.frame(bias = c(hbsts,hsbsts,ssbsts),
+                          effect = c(ef1,ef2,ef3),
+                          model = c(rep('HBSTS',length(ef1)),
+                                    rep('HS-BSTS',length(ef2)),
+                                    rep('SS-BSTS',length(ef3))))
+  bias_long$effect <- as.factor(bias_long$effect)
+  bias_long$model <- as.factor(bias_long$model)
+  return(bias_long)
+}
+
+coverage.gen <- function(d){
+  nsim <- length(d$effect[,1])
+ 
+ coverage <- data.frame(hbsts = c(mean(d$effect.ci[,1,1] <= 0 & d$effect.ci[,1,2] >=0),
+             colMeans((d$avgeffectall.ci.lower[,1,] <= d$realeffect[,1,]) & (d$avgeffectall.ci.upper[,1,] >= d$realeffect[,1,]))),
+  hsbsts = c(mean(d$effect.ci[,2,1] <= 0 & d$effect.ci[,2,2] >=0),
+              colMeans((d$avgeffectall.ci.lower[,2,] <= d$realeffect[,1,]) & (d$avgeffectall.ci.upper[,2,] >= d$realeffect[,1,]))),
+  ssbsts = c(mean(d$effect.ci[,3,1] <= 0 & d$effect.ci[,3,2] >=0),
+              colMeans((d$avgeffectall.ci.lower[,3,] <= d$realeffect[,1,]) & (d$avgeffectall.ci.upper[,3,] >= d$realeffect[,1,]))),
+  effect =rep(c(0,0.01,0.03,0.05,0.07,0.1,0.3,0.5),3))
+  
+  coverage_long <- coverage %>%
+    pivot_longer(
+      cols = c(hbsts, hsbsts, ssbsts),
+      names_to = "model",
+      values_to = "coverage"
+    ) %>%
+    mutate(effect = factor(effect, levels = c(0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.3, 0.5)),
+           model = recode(
+             model,
+             hbsts  = "HBSTS",
+             hsbsts = "HS-BSTS",
+             ssbsts = "SS-BSTS"
+           ))
+  return(coverage_long)
+}
 
 
 
      
+d1 <- readRDS('/simulated_data/simulation2 H5/smallsim50_5.RData')
+d2 <- readRDS('/simulated_data/simulation2 H5/smallsim100_5.RData')
+d3 <- readRDS('/simulated_data/simulation2 H5/smallsim200_5.RData')
+d4 <- readRDS('/simulated_data/simulation2 H5/smallsim100mcar_5.RData')
+d5 <- readRDS('/simulated_data/simulation2 H5/smallsim100mnar_5.RData')
+d6 <- readRDS('/simulated_data/simulation2 H5/smallsim100season_5.RData')
+d7 <- readRDS('/simulated_data/simulation2 H5/smallsim100cor_5.RData')
+d8 <- readRDS('/simulated_data/simulation2 H5/smallsim100mu1_5.RData')
+d9 <- readRDS('/simulated_data/simulation2 H5/smallsim100mu15_5.RData')
+
+
+df.list <- lapply(list(d1,d2,d3,d4,d5,d6,d7,d8,d9),df.gen)
+
+default.theme <- theme(
+  plot.caption.position = "plot",
+  plot.title = element_text(
+    hjust = 0.5,size = 20),
+  axis.title = element_text(size = 14),
+  axis.text = element_text(size = 14),
+  legend.title = element_text(size = 14),
+  legend.text = element_text(size = 14),
+  axis.text.x = element_text(
+    angle = 45,
+    hjust = 1
+  ))
+
+p1 <- ggplot(df.list[[1]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = "(a) T=50") +default.theme
+
+p2 <- ggplot(df.list[[2]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = "(b) T=100")+default.theme
+
+
+p3 <- ggplot(df.list[[3]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = "(c) T=5=200")+default.theme
+
+
+p4 <- ggplot(df.list[[4]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = "(d) T=100, MCAR")+default.theme
+
+
+p5 <- ggplot(df.list[[5]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = "(e) T=100, MNAR")+default.theme
+
+
+p6 <- ggplot(df.list[[6]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = "(f) T=100, seasonal pattern")+default.theme
+
+
+
+p7 <- ggplot(df.list[[7]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = "(g) T=100, correlation")+default.theme
+
+
+
+p8 <- ggplot(df.list[[8]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = expression(paste("(h) ", sigma[mu] == 1)))+default.theme
+
+p9 <- ggplot(df.list[[9]], aes(x = effect, y = bias, fill = model)) +
+  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  scale_fill_manual(values=c('HBSTS'='orange','HS-BSTS'='skyblue2','SS-BSTS'='grey')) +
+  labs(x = "Effect size", y = "Bias", fill = "Model") +
+  theme_bw() + labs(caption = expression(paste("(i) ", sigma[mu] == 1.5)))+default.theme
+library(patchwork)
+
+combined_plot <- (p1 + p2 + p3) /
+  (p4 + p5 + p6) /
+  (p7 + p8 + p9) +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "top",
+    plot.caption = element_text(
+      hjust = 0.5,
+      size = 12
+    )
+  )
+combined_plot
+
+# ------------- actual effect size distribution --------------------------
+ef.gen <- function(d){
+  nsim <- length(d$effect[,1])
+  ef <- data.frame(abseffect = c(0,as.vector(d$realeffect[,1,])),
+                   effect = c(0,rep(c(0.01,0.03,0.05,0.07,0.1,0.3,0.5),each=nsim)))
+  return(ef)
+}
+df.list <- lapply(list(d1,d2,d3,d4,d5,d6,d7,d8,d9),ef.gen)
+
+p1 <- ggplot(df.list[[1]], aes(x = factor(effect), y = abseffect)) +
+ # geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = "(a) T=50") +default.theme
+
+p2 <- ggplot(df.list[[2]], aes(x = factor(effect), y = abseffect)) +
+ #  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = "(b) T=100") +default.theme
+
+
+p3 <- ggplot(df.list[[3]], aes(x = factor(effect), y = abseffect)) +
+ # geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = "(c) T=200") +default.theme
+
+
+p4 <- ggplot(df.list[[4]], aes(x = factor(effect), y = abseffect)) +
+ # geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = "(d) T=100,MCAR") +default.theme
+
+
+p5 <- ggplot(df.list[[5]], aes(x = factor(effect), y = abseffect)) +
+ # geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = "(e) T=100,MNAR") +default.theme
+p6 <- ggplot(df.list[[6]], aes(x = factor(effect), y = abseffect)) +
+#  geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = "(f) T=100, seasonal pattern") +default.theme
+
+
+p7 <- ggplot(df.list[[7]], aes(x = factor(effect), y = abseffect)) +
+ # geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = "(g) T=100, correlation") +default.theme
+
+
+p8 <- ggplot(df.list[[8]], aes(x = factor(effect), y = abseffect)) +
+  #geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = expression(paste("(h) ", sigma[mu] == 1))) +default.theme
+
+p9 <- ggplot(df.list[[9]], aes(x = factor(effect), y = abseffect)) +
+  #geom_hline(yintercept = 0, linetype = "22", linewidth = 0.8,colour = "red") +
+  geom_boxplot(position = position_dodge(width = 0.8),outlier.size = 0.5) +
+  labs(x = "Effect size", y = "Actual effect") +
+  theme_bw() + labs(caption = expression(paste("(h) ", sigma[mu] == 1.5))) +default.theme
+
+
+
+combined_plot <- (p1 + p2 + p3) /
+  (p4 + p5 + p6) /
+  (p7 + p8 + p9) +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "top",
+    plot.caption = element_text(
+      hjust = 0.5,
+      size = 12
+    )
+  )
+combined_plot
