@@ -10,6 +10,7 @@ library(assertthat)
 library(truncnorm)
 library(tmvtnorm)
 library(tidyr)
+library(haven)
 library('rstan')
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -700,3 +701,257 @@ ggplot(comp, aes(x = group, y = probability)) +
 
 
 
+################################################################
+########## additional real data plot upon request from reviewers ####
+################################################################
+bstsmod <- hmodmw_notruncate#hmod14##ce
+hmod <- hmodmw#hmod_14_re#hmodmw_notruncate
+
+# point wise effect plot including pre-intervention period
+datahmod <- CreateDataFrameForPlot(hmod)
+datahmod <- datahmod[datahmod$metric == 'pointwise',]
+databsts <- CreateDataFrameForPlot(bstsmod)
+databsts <- databsts[databsts$metric == 'pointwise',]
+effectplot <- data.frame(pred.mean = c(databsts$mean,datahmod$mean),
+                         low=c(databsts$lower,datahmod$lower),
+                         upper=c(databsts$upper,datahmod$upper),
+                         #time=c(-64:42,-64:42),
+                         time=rep(seq.Date(from=as.Date('2009-01-10'),by='1 month',length.out=107),2),
+                         type=rep(c('Pointwise effect (BSTS)', 'Pointwise effect (HBSTS)'),each=107))
+
+ggplot(aes(x=time,y=pred.mean,color=type,group=type,fill=type),data=effectplot) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line() +
+  ggplot2::geom_ribbon(aes(ymin = low, ymax = upper), alpha = 0.25, colour = NA) +
+  geom_vline(xintercept = as.Date('2014-05-10'),linetype = "dashed")+
+  geom_hline(yintercept = 0,linetype='dashed') +
+  # ggplot2::scale_y_continuous(limits = c(10, 14), breaks = seq(10, 14, by = 1)) +
+  ggplot2::labs(x = 'Time (year-month)',
+                y = 'GHQ-12 score') +
+  scale_x_date(date_labels = "%Y-%m",
+               breaks = seq.Date(from=as.Date('2009-01-10'),by='8 month',length.out=107))+
+  ggplot2::scale_colour_manual(values = c( 'orange2','blue'))+#,"#009966")) +
+  ggplot2::scale_fill_manual(values = c( 'orange2','blue'))+
+  #ggplot2::scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, by = 5))+
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        legend.position = 'bottom',
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 60, hjust = 1,size=14));
+
+
+
+
+
+# average effect in pre/post intervention period
+
+modeli <-hmod$model$bsts.model
+pre.time <- 64
+alpha=0.05
+niter=10000
+nchains=1
+burn=3000
+post.time = 107-pre.time
+fitted <- rstan::extract(hmod$model$bsts.model)
+y.samples <- cbind(fitted$alpha[,1:64],fitted$alpha_forecast_unscale)
+effect.hbsts <- function(modeli,pre.time,post.time,niter,burn,nchains=1,alpha=0.05,emp.mean.y,hdi=FALSE){
+  fitted <- rstan::extract(modeli)
+  y.samples <- cbind(fitted$alpha[,1:pre.time],fitted$alpha_forecast_unscale)
+  state.samples <- cbind(fitted$mu+fitted$f, fitted$mu_forecast+fitted$f_forecast)
+  state.samples <- matrix(fitted$alpha_sd,nrow=(niter-burn)*nchains,ncol=pre.time+post.time) * state.samples + matrix(fitted$alpha_mean,nrow=(niter-burn)*nchains,ncol=pre.time+post.time)
+  prob.lower <- alpha / 2      # e.g., 0.025 when alpha = 0.05
+  prob.upper <- 1 - alpha / 2
+  point.pred.mean <- colMeans(state.samples)
+  if(hdi==TRUE){
+    bound <- hdi(y.samples, credMass = 1-alpha)
+    point.pred.lower <- bound[1,]
+    point.pred.upper <- bound[2,]
+  }else{
+    point.pred.lower <- as.numeric(t(apply(y.samples, 2, quantile, prob.lower)))
+    point.pred.upper <- as.numeric(t(apply(y.samples, 2, quantile, prob.upper)))
+  }
+  
+  point.pred <- data.frame(point.pred = point.pred.mean,
+                           point.pred.lower, point.pred.upper)
+  y.model <-emp.mean.y#colMeans(fitted$alpha_bar) ### y.model=origin.mean.y???
+  y.cf <- y.model[c((pre.time+1):(pre.time+post.time))]
+  if(hdi == TRUE){
+    cum.pred <- ComputeCumulativePredictions.hdi(y.samples, point.pred, y.model,
+                                                 pre.time+1, alpha)
+  }else{
+    cum.pred <- ComputeCumulativePredictions(y.samples, point.pred, y.model,
+                                             pre.time+1, alpha)
+  }
+  
+  y.samples.post <- y.samples[, c((pre.time+1):(pre.time+post.time)), drop = FALSE]
+  point.pred.mean.post <- point.pred$point.pred[c((pre.time+1):(pre.time+post.time))]
+  y.post <- tail(y.cf, post.time)
+  
+  if(hdi == TRUE){
+    summary <- CompileSummaryTable.hdi(y.post, y.samples.post, point.pred.mean.post,
+                                       alpha)
+  }else{
+    summary <- CompileSummaryTable(y.post, y.samples.post, point.pred.mean.post,
+                                   alpha)
+  }
+  return(summary)
+}
+
+
+pre.time <- 64
+alpha=0.05
+niter=10000
+nchains=1
+burn=3000
+post.time = 107-pre.time
+y.post <- bsts.zoo.mon$ghq[(pre.time+1):107]
+y.pre <- bsts.zoo.mon$ghq[1:pre.time]
+
+modeli <-hmod$model$bsts.model
+fitted <- rstan::extract(modeli)
+y.samples <- cbind(fitted$alpha[,1:pre.time],fitted$alpha_forecast_unscale)
+y.samples.post <- y.samples[, c((pre.time+1):(pre.time+post.time)), drop = FALSE]
+y.samples.pre <- y.samples[, 1:pre.time, drop = FALSE]
+state.samples <- cbind(fitted$mu+fitted$f, fitted$mu_forecast+fitted$f_forecast)
+state.samples <- matrix(fitted$alpha_sd,nrow=(niter-burn)*nchains,ncol=pre.time+post.time) * state.samples + matrix(fitted$alpha_mean,nrow=(niter-burn)*nchains,ncol=pre.time+post.time)
+point.pred.mean <- colMeans(state.samples)
+y.repmat.post <- matrix(y.post, nrow = 7000,
+                        ncol = length(y.post), byrow = TRUE)
+hmod.post.lowci <- quantile(rowMeans(y.repmat.post - y.samples.post),
+         0.025)
+hmod.post.upci <- quantile(rowMeans(y.repmat.post - y.samples.post),
+                            0.975)
+hmod.post.effect <- mean(y.post) - mean(point.pred.mean[(pre.time+1):107])
+
+
+y.repmat.pre <- matrix(y.pre, nrow = 7000,
+                        ncol = length(y.pre), byrow = TRUE)
+hmod.pre.lowci <- quantile(rowMeans(y.repmat.pre[,1:pre.time] - y.samples.pre[,1:pre.time]),
+                            0.025)
+hmod.pre.upci <- quantile(rowMeans(y.repmat.pre[,1:pre.time] - y.samples.pre[,1:pre.time]),
+                           0.975)
+hmod.pre.effect <- mean(y.pre) - mean(point.pred.mean[1:pre.time])
+
+
+hmod.pre.lowci.drop <- quantile(rowMeans(y.repmat.pre[,2:pre.time] - y.samples.pre[,2:pre.time]),
+                           0.025)
+hmod.pre.upci.drop <- quantile(rowMeans(y.repmat.pre[,2:pre.time] - y.samples.pre[,2:pre.time]),
+                          0.975)
+hmod.pre.effect.drop <- mean(y.pre[2:pre.time]) - mean(point.pred.mean[2:pre.time])
+
+
+modeli <-ce$model$bsts.model
+fitted <- modeli
+y.samples <- bstsmod$model$posterior.samples
+y.samples.post <- y.samples[, c((pre.time+1):(pre.time+post.time)), drop = FALSE]
+y.samples.pre <- y.samples[, 1:pre.time, drop = FALSE]
+state.samples <- cbind(fitted$mu+fitted$f, fitted$mu_forecast+fitted$f_forecast)
+#state.samples <- matrix(fitted$alpha_sd,nrow=(niter-burn)*nchains,ncol=pre.time+post.time) * state.samples + matrix(fitted$alpha_mean,nrow=(niter-burn)*nchains,ncol=pre.time+post.time)
+point.pred.mean <- colMeans(y.samples)
+y.repmat.post <- matrix(y.post, nrow = nrow(y.samples),
+                        ncol = length(y.post), byrow = TRUE)
+ce.post.lowci <- quantile(rowMeans(y.repmat.post - y.samples.post),
+                            0.025)
+ce.post.upci <- quantile(rowMeans(y.repmat.post - y.samples.post),
+                           0.975)
+ce.post.effect <- mean(y.post) - mean(point.pred.mean[(pre.time+1):107])
+y.repmat.pre <- matrix(y.pre, nrow = nrow(y.samples),
+                        ncol = length(y.pre), byrow = TRUE)
+ce.pre.lowci <- quantile(rowMeans(y.repmat.pre - y.samples.pre),
+                         0.025)
+ce.pre.upci <- quantile(rowMeans(y.repmat.pre - y.samples.pre),
+                        0.975)
+ce.pre.effect <- mean(y.pre) - mean(point.pred.mean[1:pre.time])
+
+dates <- seq.Date(from=as.Date('2009-01-10'),by='1 month',length.out=107)
+
+avgeffectplot <- data.frame(pred.mean=c(rep(hmod.pre.effect,pre.time),rep(hmod.post.effect,post.time),
+                                        rep(hmod.pre.effect.drop,pre.time-1),
+                                        rep(ce.pre.effect,pre.time),rep(ce.post.effect,post.time)),
+                            low = c(rep(hmod.pre.lowci,pre.time),rep(hmod.post.lowci,post.time),
+                                    rep(hmod.pre.lowci.drop,pre.time-1),
+                                    rep(ce.pre.lowci,pre.time),rep(ce.post.lowci,post.time)),
+                            upper = c(rep(hmod.pre.upci,pre.time),rep(hmod.post.upci,post.time),
+                                      rep(hmod.pre.upci.drop,pre.time-1),
+                                      rep(ce.pre.upci,pre.time),rep(ce.post.upci,post.time)),
+                            time=c(dates,dates[2:pre.time],dates),
+                            type=c(rep('Average effect (HBSTS)',107),
+                                   rep('Pre-intervention Average effect (HBSTS, removed first time point)',pre.time-1),
+                                   rep('Average effect (BSTS)',107)))
+
+
+ggplot(aes(x=time,y=pred.mean,color=type,group=type,fill=type),data=avgeffectplot) +
+  #ggplot2::geom_point() +
+  ggplot2::geom_line() +
+  ggplot2::geom_ribbon(aes(ymin = low, ymax = upper), alpha = 0.25, colour = NA) +
+  geom_vline(xintercept = as.Date('2014-05-10'),linetype = "dashed")+
+  geom_hline(yintercept = 0,linetype='dashed') +
+  # ggplot2::scale_y_continuous(limits = c(10, 14), breaks = seq(10, 14, by = 1)) +
+  ggplot2::labs(x = 'Time (year-month)',
+                y = 'GHQ-12 score') +
+  scale_x_date(date_labels = "%Y-%m",
+               breaks = seq.Date(from=as.Date('2009-01-10'),by='8 month',length.out=107))+
+  ggplot2::scale_colour_manual(values = c( 'orange2','blue','green2'),guide = guide_legend(nrow = 2))+#,"#009966")) +
+  ggplot2::scale_fill_manual(values = c( 'orange2','blue','green2'),guide = guide_legend(nrow = 2))+
+  #ggplot2::scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, by = 5))+
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        legend.position = 'bottom',
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 60, hjust = 1,size=14));
+
+## check CI (re vs no re)
+
+replot <- data.frame(pred.mean = c(colMeans(((hmodmw$model$posterior.samples))),colMeans(((hmodmw_notruncate$model$posterior.samples))),bsts.zoo.mon$ghq),
+                      low=c(apply(((hmodmw$model$posterior.samples)),2, quantile,0.025),apply(((hmodmw_notruncate$model$posterior.samples)),2, quantile,0.025),bsts.zoo.mon$ghq),
+                      upper=c(apply(((hmodmw$model$posterior.samples)),2,quantile,0.975),apply(((hmodmw_notruncate$model$posterior.samples)),2, quantile,0.975),bsts.zoo.mon$ghq),
+                      #time=c(-64:42,-64:42),
+                      time=rep(seq.Date(from=as.Date('2009-01-10'),by='1 month',length.out=107),3),
+                      type=rep(c('Prediction (HBSTS)', 'Prediction (HBSTS with random effects)','Observation'),each=107))
+
+
+ggplot(aes(x=time,y=pred.mean,color=type,group=type,fill=type),data=replot) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line() +
+  ggplot2::geom_ribbon(aes(ymin = low, ymax = upper), alpha = 0.25, colour = NA) +
+  geom_vline(xintercept = as.Date('2014-05-10'),linetype = "dashed")+
+  # ggplot2::scale_y_continuous(limits = c(10, 14), breaks = seq(10, 14, by = 1)) +
+  ggplot2::labs(x = 'Time (year-month)',
+                y = 'GHQ-12 score') +
+  scale_x_date(date_labels = "%Y-%m",
+               breaks = seq.Date(from=as.Date('2009-01-10'),by='8 month',length.out=107))+
+  ggplot2::scale_colour_manual(values = c('black', 'orange2','blue'))+#,"#009966")) +
+  ggplot2::scale_fill_manual(values = c('black', 'orange2','blue'))+
+  #ggplot2::scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, by = 5))+
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        legend.position = 'bottom',
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),
+        axis.text.x = element_text(angle = 60, hjust = 1,size=14));
+
+
+## causal arima for real data
+devtools::install_github("FMenchetti/CausalArima")
+library(CausalArima)
+safe_impact <- function(model, digits = 3) {
+  assign("ce", model, envir = .GlobalEnv)
+  impact(ce, digits = digits)
+}
+calendar.time <- as.Date(1:107)
+calendar.intervene <- calendar.time[65]
+
+tarima <- system.time({carima.white <- CausalArima(y=treated.df.qua[,2],dates=calendar.time,int.date=calendar.intervene,
+            xreg=as.matrix(control.df.qua[,c('1','2','4')]),nboot=1000)})
+
+
+tarima <- system.time({carima.all <- CausalArima(y=treated.df.qua[,2],dates=calendar.time,int.date=calendar.intervene,
+                                                   xreg=as.matrix(control.df.qua[,2:14]),nboot=1000)})
+carima.all.summary <- safe_impact(carima.all)
+carima.all.summary$impact_boot$average
+carima.all.pt <- plot(carima.all)
